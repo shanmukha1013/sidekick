@@ -49,84 +49,116 @@
 }
 
 :root {
-  --background: #F5F3F5;
-  --foreground: #1F1F1F;
-  --card: #FFFFFF;
-  --card-foreground: #1F1F1F;
-  --popover: #FFFFFF;
-  --popover-foreground: #1F1F1F;
-  --primary: #3B1E30;
-  --primary-foreground: #FFFFFF;
-  --secondary: #FF9E79;
-  --secondary-foreground: #3B1E30;
-  --muted: #E8E5E8;
-  --muted-foreground: #6B7280;
-  --accent: #FF9E79;
-  --accent-foreground: #3B1E30;
+  /* Page/surface background - Charcoal */
+  --background: #1E2229;
+  --foreground: #F3F4F6;
+
+  /* Foreground surfaces/cards - Darker Charcoal (no white) */
+  --card: #2A303C;
+  --card-foreground: #F3F4F6;
+
+  --popover: #2A303C;
+  --popover-foreground: #F3F4F6;
+
+  --primary: #FACC15;
+  --primary-foreground: #1E2229;
+
+  --secondary: #374151;
+  --secondary-foreground: #F3F4F6;
+
+  --muted: #374151;
+  --muted-foreground: #9CA3AF;
+
+  --accent: #FACC15;
+  --accent-foreground: #1E2229;
+
   --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: #E8E5E8;
-  --input: #E8E5E8;
-  --ring: #3B1E30;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 18px;
-  --sidebar: #F5F3F5;
-  --sidebar-foreground: #1F1F1F;
-  --sidebar-primary: #3B1E30;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E8E5E8;
-  --sidebar-accent-foreground: #1F1F1F;
-  --sidebar-border: #E8E5E8;
-  --sidebar-ring: #3B1E30;
+  --destructive-foreground: #F3F4F6;
+
+  --border: #374151;
+  --input: #374151;
+  --ring: #FACC15;
+
+  --radius: 16px;
+
+  --sidebar: #1E2229;
+  --sidebar-foreground: #F3F4F6;
+  --sidebar-primary: #FACC15;
+  --sidebar-primary-foreground: #1E2229;
+  --sidebar-accent: #2A303C;
+  --sidebar-accent-foreground: #F3F4F6;
+  --sidebar-border: #374151;
+  --sidebar-ring: #FACC15;
 }
 
 .dark {
-  --background: #1A1A1A;
-  --foreground: #F5F3F5;
-  --card: #242424;
-  --card-foreground: #F5F3F5;
-  --popover: #242424;
-  --popover-foreground: #F5F3F5;
-  --primary: #3B1E30;
-  --primary-foreground: #FFFFFF;
-  --secondary: #FF9E79;
-  --secondary-foreground: #3B1E30;
-  --muted: #333333;
-  --muted-foreground: #A1A1AA;
-  --accent: #FF9E79;
-  --accent-foreground: #3B1E30;
+  /* Enforce Dark Theme colors (Charcoal page background) */
+  --background: #1E2229;
+  --foreground: #F3F4F6;
+
+  /* Foreground surfaces/cards - Darker Charcoal (no white) */
+  --card: #2A303C;
+  --card-foreground: #F3F4F6;
+
+  --popover: #2A303C;
+  --popover-foreground: #F3F4F6;
+
+  --primary: #FACC15;
+  --primary-foreground: #1E2229;
+
+  --secondary: #374151;
+  --secondary-foreground: #F3F4F6;
+
+  --muted: #374151;
+  --muted-foreground: #9CA3AF;
+
+  --accent: #FACC15;
+  --accent-foreground: #1E2229;
+
   --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: #333333;
-  --input: #333333;
-  --ring: #FF9E79;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: #1A1A1A;
-  --sidebar-foreground: #F5F3F5;
-  --sidebar-primary: #3B1E30;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #333333;
-  --sidebar-accent-foreground: #F5F3F5;
-  --sidebar-border: #333333;
-  --sidebar-ring: #FF9E79;
+  --destructive-foreground: #F3F4F6;
+
+  --border: #374151;
+  --input: #374151;
+  --ring: #FACC15;
+
+  --radius: 16px;
+
+  --sidebar: #1E2229;
+  --sidebar-foreground: #F3F4F6;
+  --sidebar-primary: #FACC15;
+  --sidebar-primary-foreground: #1E2229;
+  --sidebar-accent: #2A303C;
+  --sidebar-accent-foreground: #F3F4F6;
+  --sidebar-border: #374151;
+  --sidebar-ring: #FACC15;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body,
+  #__next,
+  main,
+  .app,
+  .layout,
+  .page {
+    background: var(--background) !important;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
   }
-  html {
-    @apply font-sans;
+  
+  /* Soft shadows for standard elevated cards */
+  .shadow-soft {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   }
+
+  /* React-Leaflet Overrides */
+  .leaflet-container { z-index: 0 !important; font-family: inherit; }
+  .leaflet-popup-content-wrapper { background: var(--card); color: var(--foreground); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .leaflet-popup-tip { background: var(--card); border: 1px solid var(--border); }
+  .leaflet-popup-close-button { color: var(--foreground) !important; }
 }

@@ -1,7 +1,42 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useState } from "react";
 
 export default function SignupPage() {
+  const [role, setRole] = useState("WORKER");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, role }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Registration failed");
+      }
+
+      alert("Registration successful! Token: " + data.access_token);
+      window.location.href = "/dashboard";
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="sm:mx-auto sm:w-full sm:max-w-md">
       <div className="flex justify-center mb-6">
@@ -18,19 +53,20 @@ export default function SignupPage() {
       </p>
 
       <div className="mt-8 bg-card py-8 px-4 shadow sm:rounded-[18px] sm:px-10 border border-border">
-        <form className="space-y-6" action="#" method="POST">
+        {error && <div className="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-lg">{error}</div>}
+        <form className="space-y-6" onSubmit={handleSubmit}>
           
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-foreground">
+            <label className="block text-sm font-medium text-foreground">
               I want to...
             </label>
             <div className="mt-2 grid grid-cols-2 gap-3">
-              <label className="border border-border rounded-lg p-3 flex items-center cursor-pointer hover:border-primary transition-colors bg-background">
-                <input type="radio" name="role" value="worker" className="text-primary focus:ring-primary border-border" defaultChecked />
+              <label className={`border rounded-lg p-3 flex items-center cursor-pointer transition-colors ${role === 'WORKER' ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}>
+                <input type="radio" name="role" value="WORKER" checked={role === 'WORKER'} onChange={() => setRole('WORKER')} className="text-primary focus:ring-primary border-border" />
                 <span className="ml-2 text-sm text-foreground">Find Work</span>
               </label>
-              <label className="border border-border rounded-lg p-3 flex items-center cursor-pointer hover:border-primary transition-colors bg-background">
-                <input type="radio" name="role" value="employer" className="text-primary focus:ring-primary border-border" />
+              <label className={`border rounded-lg p-3 flex items-center cursor-pointer transition-colors ${role === 'EMPLOYER' ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'}`}>
+                <input type="radio" name="role" value="EMPLOYER" checked={role === 'EMPLOYER'} onChange={() => setRole('EMPLOYER')} className="text-primary focus:ring-primary border-border" />
                 <span className="ml-2 text-sm text-foreground">Hire Talent</span>
               </label>
             </div>
@@ -43,9 +79,9 @@ export default function SignupPage() {
             <div className="mt-1">
               <input
                 id="email"
-                name="email"
                 type="email"
-                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-background text-foreground"
               />
@@ -59,8 +95,9 @@ export default function SignupPage() {
             <div className="mt-1">
               <input
                 id="password"
-                name="password"
                 type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-background text-foreground"
               />
@@ -70,44 +107,13 @@ export default function SignupPage() {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-[18px] shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all"
+              disabled={loading}
+              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-[18px] shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50"
             >
-              Create Account <ArrowRight className="w-4 h-4" />
+              {loading ? "Creating..." : "Create Account"} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </form>
-
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-card text-muted-foreground">
-                Or sign up with
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <div>
-              <a
-                href="#"
-                className="w-full inline-flex justify-center py-2 px-4 border border-border rounded-[18px] shadow-sm bg-background text-sm font-medium text-foreground hover:bg-muted"
-              >
-                Google
-              </a>
-            </div>
-            <div>
-              <a
-                href="#"
-                className="w-full inline-flex justify-center py-2 px-4 border border-border rounded-[18px] shadow-sm bg-background text-sm font-medium text-foreground hover:bg-muted"
-              >
-                Phone (OTP)
-              </a>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

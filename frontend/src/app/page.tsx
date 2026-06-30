@@ -3,7 +3,7 @@ import { ArrowRight, Briefcase, Star, ShieldCheck, Zap } from "lucide-react";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center">
+    <div className="min-h-screen bg-transparent flex flex-col items-center">
       
       {/* Navigation */}
       <nav className="w-full max-w-7xl flex items-center justify-between p-6">
@@ -41,8 +41,8 @@ export default function LandingPage() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-          <Link href="/explore" className="w-full sm:w-auto px-8 py-4 rounded-full bg-primary text-primary-foreground font-medium text-lg flex items-center justify-center gap-2 hover:opacity-90 transition-all hover:shadow-lg hover:shadow-primary/20">
-            Find Work <ArrowRight className="w-5 h-5" />
+          <Link href="/explore" className="w-full sm:w-auto px-8 py-4 rounded-full bg-primary text-primary-foreground font-medium text-lg flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-primary/20">
+            Find Jobs Near Me <ArrowRight className="w-5 h-5" />
           </Link>
           <Link href="/post-job" className="w-full sm:w-auto px-8 py-4 rounded-full bg-card text-foreground font-medium text-lg border border-border flex items-center justify-center hover:bg-muted transition-all">
             Hire Talent
