@@ -95,7 +95,9 @@ export default function JobDetailPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h1 className="text-2xl font-black text-foreground">{job.title}</h1>
-                    <CheckCircle className="w-5 h-5 text-primary shrink-0" title="Verified Employer" />
+                    <span title="Verified Employer">
+                      <CheckCircle className="w-5 h-5 text-primary shrink-0" />
+                    </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                     {job.location_name && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{job.location_name}</span>}
