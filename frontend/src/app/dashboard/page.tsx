@@ -12,7 +12,7 @@ const JobMap = dynamic(() => import("@/components/JobMap"), {
   loading: () => <div className="w-full h-full bg-muted animate-pulse rounded-xl" />,
 });
 
-const API = "http://localhost:8000/api/v1";
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
 const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {

@@ -10,7 +10,7 @@ import dynamic from "next/dynamic";
 
 const JobMap = dynamic(() => import("@/components/JobMap"), { ssr: false });
 
-const API = "http://localhost:8000/api/v1";
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
 const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
 
 export default function JobDetailPage() {

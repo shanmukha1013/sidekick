@@ -6,7 +6,7 @@ import { Navbar } from "@/components/Navbar";
 import { motion } from "framer-motion";
 import { Briefcase, MapPin, DollarSign, IndianRupee, AlignLeft, Clock, Star, Tag, Wifi } from "lucide-react";
 
-const API = "http://localhost:8000/api/v1";
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
 const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
 
 const getCoordinates = (location: string) => {

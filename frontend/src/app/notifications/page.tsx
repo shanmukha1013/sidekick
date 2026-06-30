@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Bell, CheckCheck, Briefcase, UserCheck, UserX, Clock, MessageSquare, ChevronRight, Star, Inbox, CheckCircle, MapPin } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 
-const API = "http://localhost:8000/api/v1";
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
 const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
 
 const NOTIF_ICONS: Record<string, any> = {

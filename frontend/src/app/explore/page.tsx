@@ -10,7 +10,7 @@ import { Navbar } from "@/components/Navbar";
 
 const JobMap = dynamic(() => import("@/components/JobMap"), { ssr: false, loading: () => <div className="w-full h-[600px] bg-card border border-border rounded-xl animate-pulse" /> });
 
-const API = "http://localhost:8000/api/v1";
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
 const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
 
 const JOB_TYPES = ["Full-time", "Part-time", "Freelance", "Contract", "Internship", "Weekend", "Student"];

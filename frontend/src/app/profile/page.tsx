@@ -40,7 +40,7 @@ export default function ProfilePage() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/v1/profiles/me", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/profiles/me`, {
         headers: { "Authorization": `Bearer ${getToken()}` }
       });
       if (res.ok) {
@@ -73,7 +73,7 @@ export default function ProfilePage() {
         : [];
       delete payload.skillsInput;
 
-      const res = await fetch("http://localhost:8000/api/v1/profiles/me", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/profiles/me`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${getToken()}`,
