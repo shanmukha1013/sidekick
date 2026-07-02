@@ -28,10 +28,15 @@ export default function LoginPage() {
       }
 
       alert("Login successful! Token: " + data.access_token);
-      // In a real app, save token to cookies/localStorage and redirect to dashboard
+
+      // Persist token for authenticated API calls
+      window.localStorage.setItem("token", data.access_token);
+
       window.location.href = "/dashboard";
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+
     } finally {
       setLoading(false);
     }
