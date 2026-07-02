@@ -24,17 +24,22 @@ export default function LoginPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || "Login failed");
+        console.error("Login failed", { status: res.status, data });
+        throw new Error(data.detail || `Login failed (HTTP ${res.status})`);
       }
 
+      console.log("Login success", data);
       alert("Login successful! Token: " + data.access_token);
 
       // Persist token for authenticated API calls
-      window.localStorage.setItem("token", data.access_token);
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem("token", data.access_token);
+      }
 
       window.location.href = "/dashboard";
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      console.error("Login exception", err);
       setError(message);
 
     } finally {

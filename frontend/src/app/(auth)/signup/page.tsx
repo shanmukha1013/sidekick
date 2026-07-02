@@ -25,17 +25,22 @@ export default function SignupPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || "Registration failed");
+        console.error("Signup failed", { status: res.status, data });
+        throw new Error(data.detail || `Registration failed (HTTP ${res.status})`);
       }
 
+      console.log("Signup success", data);
       alert("Registration successful! Token: " + data.access_token);
 
       // Persist token for authenticated API calls
-      window.localStorage.setItem("token", data.access_token);
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem("token", data.access_token);
+      }
 
       window.location.href = "/dashboard";
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      console.error("Signup exception", err);
       setError(message);
     } finally {
       setLoading(false);
