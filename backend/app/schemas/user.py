@@ -2,17 +2,19 @@ from enum import Enum
 from pydantic import BaseModel, EmailStr
 
 class RoleEnum(str, Enum):
-    developer = "developer"
-    employer = "employer"
+    WORKER = "WORKER"
+    EMPLOYER = "EMPLOYER"
 
 class UserCreate(BaseModel):
+    username: str
+    phone_number: str
     email: EmailStr
-    password: str
     role: RoleEnum
 
 class UserLogin(BaseModel):
+    username: str
+    phone_number: str
     email: EmailStr
-    password: str
 
 class Token(BaseModel):
     access_token: str

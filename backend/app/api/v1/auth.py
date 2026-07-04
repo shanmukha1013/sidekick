@@ -12,13 +12,11 @@ async def register(user_in: UserCreate, db: AsyncIOMotorDatabase = Depends(get_d
     if user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Fake hash for local dev speed
-    hashed_password = f"hashed_{user_in.password}"
-    
     new_user = {
         "_id": str(uuid.uuid4()),
+        "username": user_in.username,
+        "phone_number": user_in.phone_number,
         "email": user_in.email,
-        "password_hash": hashed_password,
         "role": user_in.role.value
     }
     await db.users.insert_one(new_user)
@@ -30,11 +28,10 @@ async def register(user_in: UserCreate, db: AsyncIOMotorDatabase = Depends(get_d
 async def login(user_in: UserLogin, db: AsyncIOMotorDatabase = Depends(get_db)):
     user = await db.users.find_one({"email": user_in.email})
     if not user:
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
+        raise HTTPException(status_code=400, detail="User not found")
     
-    # Fake verify
-    if user["password_hash"] != f"hashed_{user_in.password}":
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    if user.get("username") != user_in.username or user.get("phone_number") != user_in.phone_number:
+        raise HTTPException(status_code=400, detail="Incorrect username or phone number")
     
     # Mock token
     return {"access_token": f"token_for_{user['email']}", "token_type": "bearer"}

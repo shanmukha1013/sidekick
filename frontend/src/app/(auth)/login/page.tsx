@@ -5,8 +5,9 @@ import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 export default function LoginPage() {
+  const [username, setUsername] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +20,7 @@ export default function LoginPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, phone_number: phone, email }),
       });
 
       const data = await res.json();
@@ -41,7 +42,6 @@ export default function LoginPage() {
       const message = err instanceof Error ? err.message : String(err);
       console.error("Login exception", err);
       setError(message);
-
     } finally {
       setLoading(false);
     }
@@ -66,6 +66,38 @@ export default function LoginPage() {
         {error && <div className="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-lg">{error}</div>}
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
+            <label htmlFor="username" className="block text-sm font-medium text-foreground">
+              Username
+            </label>
+            <div className="mt-1">
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-background text-foreground"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-foreground">
+              Phone Number
+            </label>
+            <div className="mt-1">
+              <input
+                id="phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-background text-foreground"
+              />
+            </div>
+          </div>
+
+          <div>
             <label htmlFor="email" className="block text-sm font-medium text-foreground">
               Email address
             </label>
@@ -75,22 +107,6 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
-                className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-background text-foreground"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-foreground">
-              Password
-            </label>
-            <div className="mt-1">
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 required
                 className="appearance-none block w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-muted-foreground focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-background text-foreground"
               />
@@ -111,3 +127,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
