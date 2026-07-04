@@ -3,21 +3,15 @@ import { SVGProps } from "react";
 export function Logo(props: SVGProps<SVGSVGElement>) {
   return (
     <svg 
-      viewBox="0 0 32 32" 
+      viewBox="0 0 100 100" 
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
-      <defs>
-        <mask id="arrow-cut">
-          <rect width="32" height="32" fill="#F3F4F6" />
-          <path d="M 7 25 L 25 7" stroke="#1F2937" strokeWidth="7" strokeLinecap="round" />
-        </mask>
-      </defs>
-      <rect width="32" height="32" rx="8" fill="#FACC15"/>
-      <circle cx="16" cy="16" r="8.5" stroke="#0F172A" strokeWidth="2.5" mask="url(#arrow-cut)"/>
-      <path d="M 7 25 L 25 7" stroke="#0F172A" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M 16 7 L 25 7 L 25 16" stroke="#0F172A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <rect width="100" height="100" rx="24" fill="#FACC15"/>
+      <path d="M 23.7 59.6 A 28 28 0 1 1 40.4 76.3" stroke="#0F172A" strokeWidth={7.5} strokeLinecap="round" />
+      <line x1="22" y1="78" x2="65" y2="35" stroke="#0F172A" strokeWidth={7.5} strokeLinecap="round" />
+      <polyline points="50,35 65,35 65,50" stroke="#0F172A" strokeWidth={7.5} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

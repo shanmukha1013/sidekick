@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Briefcase, Star, ShieldCheck, Zap } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function LandingPage() {
   return (
@@ -8,8 +9,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="w-full max-w-7xl flex items-center justify-between p-6">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">S</div>
-          <span className="font-bold text-xl tracking-tight text-foreground">SideKick</span>
+          <BrandLogo layout="horizontal" iconSize={32} />
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
           <Link href="/explore" className="hover:text-primary transition-colors">Explore Jobs</Link>
