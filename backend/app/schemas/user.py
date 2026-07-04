@@ -7,14 +7,14 @@ class RoleEnum(str, Enum):
 
 class UserCreate(BaseModel):
     username: str
-    phone_number: str
+    password: str
     email: EmailStr
+    phone_number: str
     role: RoleEnum
 
 class UserLogin(BaseModel):
     username: str
-    phone_number: str
-    email: EmailStr
+    password: str
 
 class Token(BaseModel):
     access_token: str
