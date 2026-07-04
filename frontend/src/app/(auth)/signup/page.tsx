@@ -52,7 +52,7 @@ export default function SignupPage() {
   return (
     <div className="sm:mx-auto sm:w-full sm:max-w-md">
       <div className="flex justify-center mb-6">
-        <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-2xl">S</div>
+        <img src="/logo.svg" alt="SideKick Logo" className="w-14 h-14" />
       </div>
       <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">
         Join SideKick today
