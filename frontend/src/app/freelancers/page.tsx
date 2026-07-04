@@ -5,7 +5,7 @@ export default function FreelancersPage() {
     <div className="min-h-screen bg-transparent">
       <nav className="w-full bg-card border-b border-border p-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
-          <img src="/logo.png" alt="SideKick" className="w-10 h-10 rounded-xl" />
+          <img src="/logo.svg" alt="SideKick" className="w-10 h-10 rounded-xl" />
           <span className="font-extrabold text-2xl tracking-tight text-foreground">SideKick</span>
         </Link>
       </nav>
