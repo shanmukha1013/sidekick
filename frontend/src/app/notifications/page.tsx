@@ -5,9 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, CheckCheck, Briefcase, UserCheck, UserX, Clock, MessageSquare, ChevronRight, Star, Inbox, CheckCircle, MapPin } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
-
-const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
-const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
+import { api } from "@/lib/apiClient";
 
 const NOTIF_ICONS: Record<string, any> = {
   application_received: { icon: Briefcase, color: "text-blue-600", bg: "bg-blue-50" },
@@ -28,11 +26,11 @@ export default function NotificationsPage() {
     setLoading(true);
     try {
       const [nRes, aRes] = await Promise.all([
-        fetch(`${API}/jobs/notifications/me`, { headers: { "Authorization": `Bearer ${getToken()}` } }),
-        fetch(`${API}/jobs/applications/employer`, { headers: { "Authorization": `Bearer ${getToken()}` } }),
+        api.get<any[]>("/jobs/notifications/me", { requireAuth: true }),
+        api.get<any[]>("/jobs/applications/employer", { requireAuth: true }),
       ]);
-      if (nRes.ok) setNotifications(await nRes.json());
-      if (aRes.ok) setApplications(await aRes.json());
+      setNotifications(nRes);
+      setApplications(aRes);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -40,24 +38,25 @@ export default function NotificationsPage() {
   useEffect(() => { fetchData(); }, []);
 
   const markAllRead = async () => {
-    await fetch(`${API}/jobs/notifications/read-all`, { method: "PUT", headers: { "Authorization": `Bearer ${getToken()}` } });
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    try {
+      await api.put("/jobs/notifications/read-all", {}, { requireAuth: true });
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    } catch (e) { console.error(e); }
   };
 
   const markRead = async (id: string) => {
-    await fetch(`${API}/jobs/notifications/${id}/read`, { method: "PUT", headers: { "Authorization": `Bearer ${getToken()}` } });
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    try {
+      await api.put(`/jobs/notifications/${id}/read`, {}, { requireAuth: true });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    } catch (e) { console.error(e); }
   };
 
   const updateApplication = async (appId: string, status: "accepted" | "rejected" | "shortlisted") => {
-    const res = await fetch(`${API}/jobs/applications/${appId}?status=${status}`, {
-      method: "PUT", headers: { "Authorization": `Bearer ${getToken()}` }
-    });
-    if (res.ok) {
+    try {
+      await api.put(`/jobs/applications/${appId}?status=${status}`, undefined, { requireAuth: true });
       setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a));
-    }
+    } catch (e) { console.error(e); }
   };
-
   const unreadCount = notifications.filter(n => !n.is_read).length;
   const pendingCount = applications.filter(a => a.status === "pending").length;
 

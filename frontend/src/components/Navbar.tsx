@@ -5,8 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { Bell } from "lucide-react";
-
-const API = "http://localhost:8000/api/v1";
+import { api } from "@/lib/apiClient";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -15,21 +14,20 @@ export function Navbar() {
 
   const fetchProfile = async () => {
     try {
-      const token = typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
-      const res = await fetch(`${API}/profiles/me`, { headers: { "Authorization": `Bearer ${token}` } });
-      if (res.ok) setProfile(await res.json());
-    } catch {}
+      const data = await api.get<any>("/profiles/me", { requireAuth: true });
+      setProfile(data);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchUnread = async () => {
     try {
-      const token = typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
-      const res = await fetch(`${API}/jobs/notifications/me`, { headers: { "Authorization": `Bearer ${token}` } });
-      if (res.ok) {
-        const data = await res.json();
-        setUnread(data.filter((n: any) => !n.is_read).length);
-      }
-    } catch {}
+      const data = await api.get<any[]>("/jobs/notifications/me", { requireAuth: true });
+      setUnread(data.filter((n: any) => !n.is_read).length);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => {
@@ -39,7 +37,6 @@ export function Navbar() {
     const interval = setInterval(fetchUnread, 30000); // Poll every 30s
     return () => { window.removeEventListener("profileUpdated", fetchProfile); clearInterval(interval); };
   }, []);
-
   const getLinkClass = (path: string) =>
     pathname === path 
       ? "text-primary font-bold border-b-2 border-primary pb-1" 

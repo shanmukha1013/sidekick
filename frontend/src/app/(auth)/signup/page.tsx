@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
+import { api } from "@/lib/apiClient";
 
 export default function SignupPage() {
   const [role, setRole] = useState("WORKER");
@@ -19,18 +20,8 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, phone_number: phone, email, role }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        console.error("Signup failed", { status: res.status, data });
-        throw new Error(data.detail || `Registration failed (HTTP ${res.status})`);
-      }
-
+      const data = await api.post<any>("/auth/register", { username, password, phone_number: phone, email, role });
+      
       console.log("Signup success", data);
       alert("Registration successful! Token: " + data.access_token);
 
@@ -40,10 +31,9 @@ export default function SignupPage() {
       }
 
       window.location.href = "/dashboard";
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+    } catch (err: any) {
       console.error("Signup exception", err);
-      setError(message);
+      setError(err.message || "Registration failed");
     } finally {
       setLoading(false);
     }

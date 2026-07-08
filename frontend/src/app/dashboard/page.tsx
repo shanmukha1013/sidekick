@@ -6,14 +6,12 @@ import { motion } from "framer-motion";
 import { MapPin, Briefcase, Inbox, Bell, Plus, TrendingUp, CheckCircle, Clock, XCircle, Bookmark, Search, FileText, ClipboardList, DollarSign, IndianRupee, Sparkles } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import dynamic from "next/dynamic";
+import { api } from "@/lib/apiClient";
 
 const JobMap = dynamic(() => import("@/components/JobMap"), {
   ssr: false,
   loading: () => <div className="w-full h-full bg-muted animate-pulse rounded-xl" />,
 });
-
-const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
-const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   pending:   { label: "Pending",   color: "text-yellow-600 bg-yellow-50 border-yellow-200", icon: Clock },
@@ -34,27 +32,24 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
-      const token = getToken();
-      const headers = { Authorization: `Bearer ${token}` };
       try {
         const [pRes, jRes, maRes, eaRes, nRes] = await Promise.all([
-          fetch(`${API}/profiles/me`, { headers }),
-          fetch(`${API}/jobs?limit=30`),
-          fetch(`${API}/jobs/applications/my`, { headers }),
-          fetch(`${API}/jobs/applications/employer`, { headers }),
-          fetch(`${API}/jobs/notifications/me`, { headers }),
+          api.get<any>("/profiles/me", { requireAuth: true }).catch(() => null),
+          api.get<any[]>("/jobs?limit=30").catch(() => []),
+          api.get<any[]>("/jobs/applications/my", { requireAuth: true }).catch(() => []),
+          api.get<any[]>("/jobs/applications/employer", { requireAuth: true }).catch(() => []),
+          api.get<any[]>("/jobs/notifications/me", { requireAuth: true }).catch(() => []),
         ]);
-        if (pRes.ok)  setProfile(await pRes.json());
-        if (jRes.ok)  setJobs(await jRes.json());
-        if (maRes.ok) setMyApps(await maRes.json());
-        if (eaRes.ok) setEmpApps(await eaRes.json());
-        if (nRes.ok)  setNotifs(await nRes.json());
+        if (pRes) setProfile(pRes);
+        setJobs(jRes);
+        setMyApps(maRes);
+        setEmpApps(eaRes);
+        setNotifs(nRes);
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
     fetchAll();
   }, []);
-
   const unread     = notifications.filter(n => !n.is_read).length;
   const pending    = myApplications.filter(a => a.status === "pending").length;
   const accepted   = myApplications.filter(a => a.status === "accepted").length;

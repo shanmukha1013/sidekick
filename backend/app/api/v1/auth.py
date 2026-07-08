@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.api.deps import get_db
 from app.schemas.user import UserCreate, UserLogin, Token
+from app.core.security import get_password_hash, verify_password, create_access_token
 import uuid
 
 router = APIRouter()
@@ -12,7 +13,7 @@ async def register(user_in: UserCreate, db: AsyncIOMotorDatabase = Depends(get_d
     if user:
         raise HTTPException(status_code=400, detail="Username already registered")
     
-    hashed_password = f"hashed_{user_in.password}"
+    hashed_password = get_password_hash(user_in.password)
     
     new_user = {
         "_id": str(uuid.uuid4()),
@@ -24,17 +25,17 @@ async def register(user_in: UserCreate, db: AsyncIOMotorDatabase = Depends(get_d
     }
     await db.users.insert_one(new_user)
     
-    # Mock token
-    return {"access_token": f"token_for_{new_user['username']}", "token_type": "bearer"}
+    access_token = create_access_token(subject=new_user["username"])
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=Token)
 async def login(user_in: UserLogin, db: AsyncIOMotorDatabase = Depends(get_db)):
     user = await db.users.find_one({"username": user_in.username})
     if not user:
-        raise HTTPException(status_code=400, detail="User not found")
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
     
-    if user.get("password_hash") != f"hashed_{user_in.password}":
-        raise HTTPException(status_code=400, detail="Incorrect password")
+    if not verify_password(user_in.password, user.get("password_hash")):
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
     
-    # Mock token
-    return {"access_token": f"token_for_{user['username']}", "token_type": "bearer"}
+    access_token = create_access_token(subject=user["username"])
+    return {"access_token": access_token, "token_type": "bearer"}

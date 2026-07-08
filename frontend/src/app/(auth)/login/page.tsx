@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
+import { api } from "@/lib/apiClient";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -16,18 +17,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        console.error("Login failed", { status: res.status, data });
-        throw new Error(data.detail || `Login failed (HTTP ${res.status})`);
-      }
-
+      const data = await api.post<any>("/auth/login", { username, password });
       console.log("Login success", data);
       alert("Login successful! Token: " + data.access_token);
 
@@ -37,10 +27,9 @@ export default function LoginPage() {
       }
 
       window.location.href = "/dashboard";
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+    } catch (err: any) {
       console.error("Login exception", err);
-      setError(message);
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }

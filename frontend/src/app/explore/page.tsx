@@ -7,11 +7,9 @@ import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, MapPin, DollarSign, IndianRupee, Briefcase, Filter, ChevronDown, SearchX, Map, List, Bookmark, Clock, Star, SlidersHorizontal, X, ChevronRight } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { api } from "@/lib/apiClient";
 
 const JobMap = dynamic(() => import("@/components/JobMap"), { ssr: false, loading: () => <div className="w-full h-[600px] bg-card border border-border rounded-xl animate-pulse" /> });
-
-const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
-const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
 
 const JOB_TYPES = ["Full-time", "Part-time", "Freelance", "Contract", "Internship", "Weekend", "Student"];
 const LOCATION_TYPES = [{ label: "Remote", value: "remote" }, { label: "Hybrid", value: "hybrid" }, { label: "On-site", value: "onsite" }];
@@ -67,13 +65,10 @@ export default function ExplorePage() {
     if (expLevel) params.set("experience_level", expLevel);
 
     try {
-      const res = await fetch(`${API}/jobs?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setJobs(prev => reset ? data : [...prev, ...data]);
-        setHasMore(data.length === 20);
-        if (reset) setPage(0);
-      }
+      const data = await api.get<any[]>(`/jobs?${params.toString()}`);
+      setJobs(prev => reset ? data : [...prev, ...data]);
+      setHasMore(data.length === 20);
+      if (reset) setPage(0);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [search, selectedTypes, selectedLocType, minRate, maxRate, expLevel, sort, page]);
@@ -85,17 +80,15 @@ export default function ExplorePage() {
   const toggleSave = async (jobId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const res = await fetch(`${API}/jobs/${jobId}/save`, { method: "POST", headers: { "Authorization": `Bearer ${getToken()}` } });
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await api.post<any>(`/jobs/${jobId}/save`, undefined, { requireAuth: true });
       setSavedJobs(prev => { const n = new Set(prev); data.saved ? n.add(jobId) : n.delete(jobId); return n; });
-    }
+    } catch (err) { console.error(err); }
   };
 
   const clearFilters = () => {
     setSearch(""); setSelectedTypes([]); setSelectedLocType(""); setMinRate(""); setMaxRate(""); setExpLevel(""); setSort("newest");
   };
-
   const activeFilterCount = selectedTypes.length + (selectedLocType ? 1 : 0) + (minRate ? 1 : 0) + (maxRate ? 1 : 0) + (expLevel ? 1 : 0);
 
   return (

@@ -2,27 +2,29 @@ from app.db.session import get_db
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from motor.motor_asyncio import AsyncIOMotorDatabase
-import uuid
+from jose import jwt, JWTError
+from app.core.config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncIOMotorDatabase = Depends(get_db)):
-    if not token.startswith("token_for_"):
-        raise HTTPException(status_code=401, detail="Invalid token format")
-    email = token.replace("token_for_", "")
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     
-    user = await db.users.find_one({"email": email})
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    user = await db.users.find_one({"username": username})
     if not user:
-        new_id = str(uuid.uuid4())
-        user_doc = {
-            "id": new_id,
-            "_id": new_id,
-            "email": email,
-            "password_hash": "fake",
-            "role": "developer"
-        }
-        await db.users.insert_one(user_doc)
-        user = user_doc
-    else:
-        user["id"] = str(user["_id"])
+        raise credentials_exception
+        
+    user["id"] = str(user["_id"])
     return user

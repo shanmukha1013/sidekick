@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Camera, Briefcase, MapPin, Clock, Edit2 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { api } from "@/lib/apiClient";
 
 interface ProfileData {
   name: string;
@@ -25,13 +26,7 @@ export default function ProfilePage() {
     name: "", username: "", bio: "", location: "", skills: [], skillsInput: "", availability: "PART_TIME", avatar_url: "", cover_url: ""
   });
   const [loading, setLoading] = useState(true);
-
-  const getToken = () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("token") || "token_for_test@example.com";
-    }
-    return "token_for_test@example.com";
-  };
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -40,24 +35,19 @@ export default function ProfilePage() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/profiles/me`, {
-        headers: { "Authorization": `Bearer ${getToken()}` }
+      const data = await api.get<any>("/profiles/me", { requireAuth: true });
+      setProfile(data);
+      setFormData({
+        name: data.name || "",
+        username: data.username || "",
+        bio: data.bio || "",
+        location: data.location || "",
+        skills: data.skills || [],
+        skillsInput: data.skills ? data.skills.join(", ") : "",
+        availability: data.availability || "PART_TIME",
+        avatar_url: data.avatar_url || "",
+        cover_url: data.cover_url || ""
       });
-      if (res.ok) {
-        const data = await res.json();
-        setProfile(data);
-        setFormData({
-          name: data.name || "",
-          username: data.username || "",
-          bio: data.bio || "",
-          location: data.location || "",
-          skills: data.skills || [],
-          skillsInput: data.skills ? data.skills.join(", ") : "",
-          availability: data.availability || "PART_TIME",
-          avatar_url: data.avatar_url || "",
-          cover_url: data.cover_url || ""
-        });
-      }
     } catch (error) {
       console.error("Failed to fetch profile", error);
     } finally {
@@ -67,27 +57,27 @@ export default function ProfilePage() {
 
   const saveProfile = async () => {
     try {
+      if (avatarFile) {
+        const formDataAvatar = new FormData();
+        formDataAvatar.append("file", avatarFile);
+        await api.post("/profiles/me/avatar", formDataAvatar, { requireAuth: true });
+      }
+
       const payload = { ...formData };
       payload.skills = formData.skillsInput 
         ? formData.skillsInput.split(",").map(s => s.trim()).filter(Boolean) 
         : [];
       delete payload.skillsInput;
+      delete (payload as any).avatar_url; // Don't send dataURL strings to the JSON endpoint
+      delete (payload as any).cover_url;
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/profiles/me`, {
-        method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${getToken()}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setProfile(updated);
-        setIsEditing(false);
-        // Trigger global nav update
-        window.dispatchEvent(new Event('profileUpdated'));
-      }
+      const updated = await api.put<any>("/profiles/me", payload, { requireAuth: true });
+      
+      setProfile(updated);
+      setIsEditing(false);
+      setAvatarFile(null);
+      // Trigger global nav update
+      window.dispatchEvent(new Event('profileUpdated'));
     } catch (error) {
       console.error("Failed to update profile", error);
     }
@@ -95,6 +85,7 @@ export default function ProfilePage() {
 
   const handleImageUpload = (file: File | undefined, field: "avatar_url" | "cover_url") => {
     if (file) {
+      if (field === "avatar_url") setAvatarFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({ ...prev, [field]: reader.result as string }));

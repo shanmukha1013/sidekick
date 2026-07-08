@@ -133,21 +133,48 @@ async def custom_swagger_ui_html():
     response_content = response_content.replace("</head>", f"{custom_css}</head>")
     return HTMLResponse(response_content)
 
+import logging
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 # Set all CORS enabled origins
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    settings.FRONTEND_URL
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=origins,
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error. Please check the logs."},
+    )
+
 from app.api.v1 import auth, profiles, jobs
 
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(profiles.router, prefix=f"{settings.API_V1_STR}/profiles", tags=["profiles"])
 app.include_router(jobs.router, prefix=f"{settings.API_V1_STR}/jobs", tags=["jobs"])
+
 @app.get("/")
 def read_root():
+    logger.info("Health check endpoint accessed")
     return {"message": "Welcome to Sidekick API"}

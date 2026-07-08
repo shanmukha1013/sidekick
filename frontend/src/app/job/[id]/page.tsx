@@ -7,11 +7,9 @@ import { motion } from "framer-motion";
 import { MapPin, DollarSign, IndianRupee, Briefcase, Clock, Star, Bookmark, Share2, Flag, ChevronLeft, Users, CheckCircle, Calendar, Zap } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import dynamic from "next/dynamic";
+import { api } from "@/lib/apiClient";
 
 const JobMap = dynamic(() => import("@/components/JobMap"), { ssr: false });
-
-const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
-const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,17 +25,13 @@ export default function JobDetailPage() {
     const fetchJob = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API}/jobs/${id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setJob(data);
-          // Fetch related jobs
-          const relRes = await fetch(`${API}/jobs?limit=4`);
-          if (relRes.ok) {
-            const all = await relRes.json();
-            setRelatedJobs(all.filter((j: any) => j.id !== id).slice(0, 3));
-          }
-        }
+        const data = await api.get<any>(`/jobs/${id}`);
+        setJob(data);
+        // Fetch related jobs
+        try {
+          const all = await api.get<any[]>("/jobs?limit=4");
+          setRelatedJobs(all.filter((j: any) => j.id !== id).slice(0, 3));
+        } catch (e) { console.error("Failed to fetch related jobs", e); }
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
@@ -45,10 +39,11 @@ export default function JobDetailPage() {
   }, [id]);
 
   const handleSave = async () => {
-    const res = await fetch(`${API}/jobs/${id}/save`, { method: "POST", headers: { "Authorization": `Bearer ${getToken()}` } });
-    if (res.ok) { const data = await res.json(); setSaved(data.saved); }
+    try {
+      const data = await api.post<any>(`/jobs/${id}/save`, undefined, { requireAuth: true });
+      setSaved(data.saved);
+    } catch (e) { console.error(e); }
   };
-
   if (loading) return (
     <div className="min-h-screen bg-transparent font-sans">
       <Navbar />

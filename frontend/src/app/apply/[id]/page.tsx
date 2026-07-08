@@ -6,9 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Briefcase, MapPin, DollarSign, IndianRupee, Clock, Upload, Send, CheckCircle, X } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
-
-const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
-const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
+import { api } from "@/lib/apiClient";
 
 export default function ApplyPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,38 +28,29 @@ export default function ApplyPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`${API}/jobs/${id}`).then(r => r.json()).then(d => setJob(d)).finally(() => setLoading(false));
+    api.get<any>(`/jobs/${id}`).then(d => setJob(d)).catch(e => console.error(e)).finally(() => setLoading(false));
   }, [id]);
 
   const handleSubmit = async () => {
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch(`${API}/jobs/${id}/apply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
-        body: JSON.stringify({
-          job_id: id,
-          cover_letter: form.cover_letter,
-          expected_salary: form.expected_salary ? parseFloat(form.expected_salary) : null,
-          portfolio_links: form.portfolio_links,
-          availability: form.availability,
-          phone: form.phone,
-        }),
-      });
-      if (res.ok) {
-        setSuccess(true);
-        setShowConfirm(false);
-      } else {
-        const err = await res.json();
-        setError(err.detail || "Failed to apply. Please try again.");
-      }
-    } catch (e) {
-      setError("Network error. Please check your connection.");
+      await api.post(`/jobs/${id}/apply`, {
+        job_id: id,
+        cover_letter: form.cover_letter,
+        expected_salary: form.expected_salary ? parseFloat(form.expected_salary) : null,
+        portfolio_links: form.portfolio_links,
+        availability: form.availability,
+        phone: form.phone,
+      }, { requireAuth: true });
+      setSuccess(true);
+      setShowConfirm(false);
+    } catch (err: any) {
+      setError(err.message || "Failed to apply. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
-
   if (loading) return (
     <div className="min-h-screen bg-transparent font-sans">
       <Navbar />

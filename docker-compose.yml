@@ -1,14 +1,10 @@
 services:
   db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: sidekick
+    image: mongo:latest
     ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mongo_data:/data/db
 
   redis:
     image: redis:7-alpine
@@ -16,4 +12,4 @@ services:
       - "6379:6379"
 
 volumes:
-  postgres_data:
+  mongo_data:

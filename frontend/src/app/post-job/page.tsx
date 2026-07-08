@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { motion } from "framer-motion";
 import { Briefcase, MapPin, DollarSign, IndianRupee, AlignLeft, Clock, Star, Tag, Wifi } from "lucide-react";
-
-const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
-const getToken = () => typeof window !== "undefined" ? (localStorage.getItem("token") || "token_for_test@example.com") : "";
+import { api } from "@/lib/apiClient";
 
 const getCoordinates = (location: string) => {
   const locs: Record<string, { lat: number; lng: number }> = {
@@ -66,24 +64,15 @@ export default function PostJobPage() {
         lat: coords.lat,
         lng: coords.lng,
       };
-      const res = await fetch(`${API}/jobs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        router.push("/dashboard");
-      } else {
-        const err = await res.json();
-        setError(err.detail || "Failed to post job. Please try again.");
-      }
-    } catch (err) {
-      setError("Network error. Make sure the backend is running.");
+      
+      await api.post("/jobs", payload, { requireAuth: true });
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Failed to post job. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-transparent font-sans text-foreground">
       <Navbar />
