@@ -2,7 +2,7 @@ import httpx
 import time
 import uuid
 
-API_URL = "http://localhost:8080/api/v1"
+API_URL = "http://localhost:8000/api/v1"
 
 def test_flow():
     client = httpx.Client(follow_redirects=True)
