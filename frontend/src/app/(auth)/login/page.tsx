@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       const data = await api.post<any>("/auth/login", { username, password });
       console.log("Login success", data);
-      alert("Login successful! Token: " + data.access_token);
+      // Login success
 
       // Persist token for authenticated API calls
       if (typeof window !== "undefined" && window.localStorage) {

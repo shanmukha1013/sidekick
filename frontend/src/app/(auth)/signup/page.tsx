@@ -23,7 +23,7 @@ export default function SignupPage() {
       const data = await api.post<any>("/auth/register", { username, password, phone_number: phone, email, role });
       
       console.log("Signup success", data);
-      alert("Registration successful! Token: " + data.access_token);
+      // Registration success
 
       // Persist token for authenticated API calls
       if (typeof window !== "undefined" && window.localStorage) {

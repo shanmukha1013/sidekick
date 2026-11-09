@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Request
+import logging
 from app.core.config import settings
 
 app = FastAPI(
@@ -9,6 +11,55 @@ app = FastAPI(
     docs_url=None, # Disable default docs to use our custom UI
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+# Set all CORS enabled origins
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    settings.FRONTEND_URL
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error. Please check the logs."},
+    )
+
+@app.on_event("startup")
+async def startup_db_check():
+    from app.db import session
+    try:
+        await session.client.admin.command("ping")
+        logger.info("Successfully connected to primary MongoDB")
+    except Exception as e:
+        logger.warning(f"Could not connect to configured MongoDB ({settings.MONGODB_URL}): {e}. Attempting local fallback...")
+        try:
+            from motor.motor_asyncio import AsyncIOMotorClient
+            fallback_client = AsyncIOMotorClient("mongodb://127.0.0.1:27017", serverSelectionTimeoutMS=3000)
+            await fallback_client.admin.command("ping")
+            session.client = fallback_client
+            session.db = fallback_client[settings.DATABASE_NAME]
+            logger.info("Successfully connected to local fallback MongoDB on 127.0.0.1:27017")
+        except Exception as fb_err:
+            logger.error(f"Fallback MongoDB connection failed: {fb_err}")
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
@@ -132,41 +183,6 @@ async def custom_swagger_ui_html():
     response_content = html_response.body.decode("utf-8")
     response_content = response_content.replace("</head>", f"{custom_css}</head>")
     return HTMLResponse(response_content)
-
-import logging
-from fastapi import Request
-from fastapi.responses import JSONResponse
-
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
-
-# Set all CORS enabled origins
-origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    settings.FRONTEND_URL
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal Server Error. Please check the logs."},
-    )
 
 from app.api.v1 import auth, profiles, jobs
 

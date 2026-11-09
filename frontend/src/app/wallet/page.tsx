@@ -47,7 +47,7 @@ export default function WalletPage() {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="text-5xl font-bold mb-8 relative z-10"
             >
-              $0.00
+              ₹0.00
             </motion.h2>
             <div className="flex gap-4 relative z-10">
               <motion.button whileTap={{ scale: 0.95 }} className="px-6 py-2.5 bg-secondary text-secondary-foreground font-semibold rounded-md flex items-center gap-2 opacity-50 cursor-not-allowed">
@@ -61,7 +61,7 @@ export default function WalletPage() {
           
           <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="col-span-1 bg-card border border-border p-8 rounded-xl shadow-sm flex flex-col justify-center transition-all">
             <p className="text-sm font-medium text-muted-foreground mb-2">Pending Clearance</p>
-            <h2 className="text-3xl font-bold mb-4 text-foreground">$0.00</h2>
+            <h2 className="text-3xl font-bold mb-4 text-foreground">₹0.00</h2>
             <p className="text-xs text-muted-foreground">No active escrow milestones currently pending.</p>
           </motion.div>
         </div>
