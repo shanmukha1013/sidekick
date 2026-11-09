@@ -147,7 +147,7 @@ function RolesSection() {
                   <span className="block text-[14px] font-semibold">{title}</span>
                   <span className="mt-0.5 block text-[13px] text-muted">{body}</span>
                 </span>
-                <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-md border", active ? "border-ink bg-ink text-white" : "border-line-strong")}>
+                <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-md border", active ? "border-silver-700 bg-silver-700 text-silver-50" : "border-line-strong")}>
                   {active && <Check className="size-3.5" />}
                 </span>
               </button>

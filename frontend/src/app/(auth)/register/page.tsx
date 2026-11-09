@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, HardDrive } from "lucide-react";
+import { isServerUnavailable } from "@/components/app/DemoBadge";
+import { DEMO_SWITCHABLE, setMode, useDataMode } from "@/lib/mode";
 import { GuestOnly } from "@/components/app/GuestOnly";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/feedback";
@@ -51,7 +53,9 @@ function RegisterForm() {
   const [errors, setErrors] = useState<Errors>({});
   const [touched, setTouched] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
   const [loading, setLoading] = useState(false);
+  const demo = useDataMode() === "demo";
   const [slow, setSlow] = useState(false);
 
   useEffect(() => {
@@ -70,6 +74,7 @@ function RegisterForm() {
     e.preventDefault();
     setTouched(true);
     setFormError(null);
+    setUnavailable(false);
     const v = validate(form);
     setErrors(v);
     if (Object.keys(v).length) return;
@@ -95,7 +100,10 @@ function RegisterForm() {
           for (const [k, msg] of Object.entries(err.errors)) if (k in form) mapped[k as keyof FormState] = msg;
           setErrors(mapped);
           if (!Object.keys(mapped).length) setFormError(err.message);
-        } else setFormError(err.message);
+        } else {
+          setFormError(err.message);
+          setUnavailable(!demo && DEMO_SWITCHABLE && isServerUnavailable(err));
+        }
       } else setFormError(errorMessage(err));
       setLoading(false);
     }
@@ -113,8 +121,42 @@ function RegisterForm() {
       <h1 className="text-[26px] font-semibold tracking-[-0.025em]">Create your account</h1>
       <p className="mt-1.5 text-[14.5px] text-muted">One account to find work and hire people.</p>
 
-      <form onSubmit={onSubmit} noValidate className="mt-8 flex flex-col gap-4">
-        {formError && <Alert tone="error">{formError}</Alert>}
+      {demo && (
+        <div className="mt-6 flex gap-3 rounded-xl border border-line bg-subtle p-4">
+          <HardDrive className="mt-0.5 size-4 shrink-0 text-silver-700" />
+          <div>
+            <p className="text-[13px] font-semibold text-ink">Demo mode — local data</p>
+            <p className="mt-0.5 text-[13px] leading-relaxed text-muted">
+              The live server is unavailable, so this account is created in this browser only — no email or SMS verification. It
+              won&apos;t exist on the live server.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} noValidate className={demo ? "mt-6 flex flex-col gap-4" : "mt-8 flex flex-col gap-4"}>
+        {formError && (
+          <Alert tone="error">
+            {formError}
+            {unavailable && (
+              <span className="mt-2 block">
+                <span className="block text-[12.5px]">You can continue with a demo account stored only in this browser.</span>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="mt-2"
+                  onClick={() => {
+                    setMode("demo");
+                    setFormError(null);
+                    setUnavailable(false);
+                  }}
+                >
+                  <HardDrive /> Continue in demo mode
+                </Button>
+              </span>
+            )}
+          </Alert>
+        )}
 
         <Field label="Full name" error={errors.full_name}>
           <Input autoComplete="name" placeholder="Priya Sharma" value={form.full_name} onChange={set("full_name")} autoFocus />
@@ -146,7 +188,7 @@ function RegisterForm() {
         {pw && !errors.password && (
           <ul className="-mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px]" aria-label="Password requirements">
             {rules.map((r) => (
-              <li key={r.label} className={cn("inline-flex items-center gap-1", r.ok ? "text-emerald-700" : "text-muted")}>
+              <li key={r.label} className={cn("inline-flex items-center gap-1", r.ok ? "text-ink" : "text-muted")}>
                 <Check className={cn("size-3.5", !r.ok && "opacity-30")} /> {r.label}
               </li>
             ))}

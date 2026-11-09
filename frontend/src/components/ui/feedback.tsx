@@ -2,6 +2,7 @@
 
 import { AlertCircle, CheckCircle2, Info, Loader2, RefreshCw, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DEMO_SWITCHABLE, getCachedMode, switchMode } from "@/lib/mode";
 import { Button } from "@/components/ui/button";
 import type { ApiError } from "@/lib/api";
 
@@ -58,9 +59,9 @@ export function Alert({
 }) {
   const styles = {
     error: "border-red-200 bg-red-50 text-red-800",
-    success: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    info: "border-brand/20 bg-brand-soft text-brand-ink",
-    warning: "border-amber-200 bg-amber-50 text-amber-800",
+    success: "border-silver-500 bg-silver-200 text-silver-900",
+    info: "border-line bg-silver-200 text-silver-800",
+    warning: "border-silver-500 bg-silver-400/60 text-silver-900",
   }[tone];
   const Icon = tone === "success" ? CheckCircle2 : tone === "info" ? Info : AlertCircle;
   return (
@@ -103,6 +104,7 @@ export function EmptyState({
 
 export function ErrorState({ error, onRetry, className }: { error: ApiError | Error | null; onRetry?: () => void; className?: string }) {
   const network = !!error && "status" in error && (error.status === 0 || error.status === 503);
+  const offerDemo = network && DEMO_SWITCHABLE && getCachedMode() !== "demo";
   return (
     <EmptyState
       className={className}
@@ -110,10 +112,15 @@ export function ErrorState({ error, onRetry, className }: { error: ApiError | Er
       title={network ? "Can't reach Sidekick" : "Something went wrong"}
       description={error?.message || "Please try again."}
       action={
-        onRetry && (
-          <Button variant="secondary" onClick={onRetry}>
-            <RefreshCw /> Try again
-          </Button>
+        (onRetry || offerDemo) && (
+          <div className="flex flex-wrap justify-center gap-2">
+            {onRetry && (
+              <Button variant="secondary" onClick={onRetry}>
+                <RefreshCw /> Try again
+              </Button>
+            )}
+            {offerDemo && <Button onClick={() => switchMode("demo")}>Continue in demo mode</Button>}
+          </div>
         )
       }
     />

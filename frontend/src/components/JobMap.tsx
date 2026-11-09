@@ -9,7 +9,7 @@ import type { Job } from "@/lib/types";
 import { formatRate } from "@/lib/format";
 
 const markerIcon = L.divIcon({
-  html: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="34" viewBox="0 0 28 34"><path d="M14 33s11-9.6 11-19A11 11 0 0 0 3 14c0 9.4 11 19 11 19z" fill="#0B0B0F" stroke="#fff" stroke-width="2"/><circle cx="14" cy="14" r="4" fill="#2F5BEA"/></svg>`,
+  html: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="34" viewBox="0 0 28 34"><path d="M14 33s11-9.6 11-19A11 11 0 0 0 3 14c0 9.4 11 19 11 19z" fill="#495057" stroke="#F8F9FA" stroke-width="2"/><circle cx="14" cy="14" r="4" fill="#CED4DA"/></svg>`,
   className: "job-map-marker",
   iconSize: [28, 34],
   iconAnchor: [14, 33],

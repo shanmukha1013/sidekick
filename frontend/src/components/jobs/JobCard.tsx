@@ -101,8 +101,8 @@ export function JobCard({
   return (
     <article
       className={cn(
-        "group relative rounded-xl border bg-surface p-4 shadow-card transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-[0_2px_8px_-2px_rgb(16_24_40/0.08)] sm:p-5",
-        highlight ? "border-brand/40" : "border-line",
+        "group relative rounded-xl border bg-surface p-4 shadow-card transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-lift sm:p-5",
+        highlight ? "border-silver-600" : "border-line",
       )}
     >
       <div className="flex items-start gap-3.5">

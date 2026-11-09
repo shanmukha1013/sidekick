@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Briefcase, Check, Search } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { DemoBadge } from "@/components/app/DemoBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/display";
 import { Alert, FullPageSpinner } from "@/components/ui/feedback";
@@ -76,7 +77,10 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-dvh bg-canvas">
       <header className="container-page flex h-16 items-center justify-between">
-        <Logo href={null} />
+        <div className="flex items-center gap-3">
+          <Logo href={null} />
+          <DemoBadge align="left" />
+        </div>
         <Button variant="ghost" size="sm" onClick={async () => { await logout(); router.replace("/login"); }}>
           Sign out
         </Button>
@@ -85,8 +89,8 @@ export default function OnboardingPage() {
         <div className="w-full max-w-xl animate-slide-up">
           <p className="text-[13px] font-medium text-muted">Step {step} of 2</p>
           <div className="mt-2 flex gap-1.5" aria-hidden="true">
-            <span className="h-1 flex-1 rounded-full bg-ink" />
-            <span className={cn("h-1 flex-1 rounded-full", step === 2 ? "bg-ink" : "bg-line")} />
+            <span className="h-1 flex-1 rounded-full bg-silver-700" />
+            <span className={cn("h-1 flex-1 rounded-full", step === 2 ? "bg-silver-700" : "bg-line")} />
           </div>
 
           {step === 1 ? (
@@ -114,7 +118,7 @@ export default function OnboardingPage() {
                       <span
                         className={cn(
                           "absolute right-4 top-4 flex size-5 items-center justify-center rounded-md border transition-colors",
-                          active ? "border-ink bg-ink text-white" : "border-line-strong bg-surface",
+                          active ? "border-silver-700 bg-silver-700 text-silver-50" : "border-line-strong bg-surface",
                         )}
                       >
                         {active && <Check className="size-3.5" />}

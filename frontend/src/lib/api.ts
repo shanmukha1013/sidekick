@@ -1,23 +1,19 @@
 /**
  * Sidekick API client.
  *
- * The base URL is normalized so that both `https://api.example.com` and
- * `https://api.example.com/api/v1` work. (A missing `/api/v1` suffix in the
- * deployed NEXT_PUBLIC_API_URL previously caused every auth call to 404.)
+ * Every screen calls `api.*`. Each request is routed by the tab's data mode (lib/mode.ts):
+ * live → the Sidekick API over HTTP; demo → the isolated browser-local adapter in lib/demo.
+ * Live and demo sessions are stored under different keys and never mix.
  */
-function resolveApiBase(raw: string | undefined): string {
-  let base = (raw || "http://localhost:8000").trim().replace(/\/+$/, "");
-  if (!/\/api\/v\d+$/.test(base)) base = `${base}/api/v1`;
-  return base;
-}
+import { API_BASE, getCachedMode, resolveMode } from "@/lib/mode";
 
-export const API_BASE = resolveApiBase(process.env.NEXT_PUBLIC_API_URL);
+export { API_BASE };
 
-const TOKEN_KEY = "sidekick.token";
+const TOKEN_KEY = "sidekick.token"; // live session (localStorage)
+const DEMO_TOKEN_KEY = "sidekick.demo.session"; // demo session (sessionStorage, this tab only)
 export const UNAUTHORIZED_EVENT = "sidekick:unauthorized";
 
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
+function liveToken(): string | null {
   try {
     return window.localStorage.getItem(TOKEN_KEY);
   } catch {
@@ -25,9 +21,31 @@ export function getToken(): string | null {
   }
 }
 
+export function hasLiveToken(): boolean {
+  return typeof window !== "undefined" && !!liveToken();
+}
+
+/** The session token for the current mode. */
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  if (getCachedMode() === "demo") {
+    try {
+      return window.sessionStorage.getItem(DEMO_TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  }
+  return liveToken();
+}
+
 export function setToken(token: string | null) {
   if (typeof window === "undefined") return;
   try {
+    if (getCachedMode() === "demo") {
+      if (token) window.sessionStorage.setItem(DEMO_TOKEN_KEY, token);
+      else window.sessionStorage.removeItem(DEMO_TOKEN_KEY);
+      return;
+    }
     if (token) window.localStorage.setItem(TOKEN_KEY, token);
     else window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem("token"); // legacy key from the previous client
@@ -59,7 +77,19 @@ interface RequestOptions {
 }
 
 async function request<T>(method: Method, path: string, opts: RequestOptions = {}): Promise<T> {
+  const mode = await resolveMode();
   const token = getToken();
+  if (mode === "demo") {
+    const { demoRequest } = await import("@/lib/demo/adapter");
+    try {
+      return await demoRequest<T>(method, path, opts.body, token);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401 && token) {
+        window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT, { detail: err.message }));
+      }
+      throw err;
+    }
+  }
   const headers: Record<string, string> = {};
   let body: BodyInit | undefined;
   if (opts.body instanceof FormData) {

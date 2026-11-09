@@ -265,7 +265,7 @@ export function ChipSelect({
             onClick={() => onChange(active ? value.filter((v) => v !== opt) : [...value, opt])}
             className={cn(
               "rounded-full border px-3 py-1 text-[13px] transition-colors",
-              active ? "border-ink bg-ink text-white" : "border-line bg-surface text-ink-2 hover:border-line-strong",
+              active ? "border-silver-700 bg-silver-700 text-silver-50" : "border-line bg-surface text-ink-2 hover:border-line-strong",
             )}
           >
             {opt}

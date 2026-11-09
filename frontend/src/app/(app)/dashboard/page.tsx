@@ -206,7 +206,7 @@ function EmployerDashboard() {
                   <Link href={`/jobs/${j.id}`} className="block truncate text-[14px] font-medium hover:text-brand-ink">{j.title}</Link>
                   <p className="text-[12.5px] text-muted">Posted {timeAgo(j.created_at)}</p>
                 </div>
-                <span className={cn("text-[12.5px] font-medium", j.status === "open" ? "text-emerald-700" : "text-muted")}>
+                <span className={cn("text-[12.5px] font-medium", j.status === "open" ? "text-ink" : "text-muted")}>
                   {j.status === "open" ? "Open" : "Closed"}
                 </span>
                 <Link href={`/employer/applicants?job=${j.id}`} className="w-24 text-right text-[13px] text-ink-2 hover:text-brand">

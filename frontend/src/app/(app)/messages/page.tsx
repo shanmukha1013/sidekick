@@ -193,7 +193,7 @@ function Conversation({ applicationId, thread, onBack, onActivity }: { applicati
                     <p
                       className={cn(
                         "whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[14px] leading-relaxed",
-                        mine ? "rounded-br-md bg-ink text-white" : "rounded-bl-md border border-line bg-surface text-ink",
+                        mine ? "rounded-br-md bg-silver-700 text-silver-50" : "rounded-bl-md border border-line bg-surface text-ink",
                       )}
                     >
                       {m.body}

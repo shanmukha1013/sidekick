@@ -69,6 +69,22 @@ DATABASE_NAME=sidekick_e2e_test JWT_SECRET=<32+ chars> uvicorn app.main:app --po
 JWT_SECRET=<same> SIDEKICK_API_URL=http://localhost:8001/api/v1 pytest -q
 ```
 
+## Demo mode (temporary fallback)
+
+When the API or its database can't be reached, the web app switches that browser tab into **demo mode**: a
+clearly labelled ("DEMO MODE — Local data") local store that runs the whole marketplace in the browser so the
+product can still be demonstrated. It is isolated from production:
+
+- Demo records live in `localStorage` (`sidekick.demo.v1`); the demo session lives in `sessionStorage`
+  (`sidekick.demo.session`). Passwords are stored only as salted PBKDF2-SHA256 hashes.
+- Nothing is sent to the API or MongoDB, and the live session token is never touched.
+- The sample jobs, companies and applicants exist **only** inside demo mode.
+- Demo-only account: `demo@sidekick.demo` / `Demo1234` (employer + job seeker).
+- Click the badge to reset demo data, or to switch back once the live server is healthy.
+
+Mode selection is controlled by `NEXT_PUBLIC_DATA_MODE`: `auto` (default — probes `GET /api/v1/health` once per
+tab and falls back to demo if it fails), `demo` (always demo) or `live` (demo disabled).
+
 ## Deployment
 
 ### API on Render
@@ -97,3 +113,4 @@ Set the project root to `frontend` and add:
 | `NEXT_PUBLIC_API_URL` | `https://sidekick-nr9n.onrender.com`    |
 
 `/api/v1` is appended automatically if it is missing. Redeploy after changing it (it is inlined at build time).
+Optionally set `NEXT_PUBLIC_DATA_MODE=live` to disable the demo-mode fallback in production.

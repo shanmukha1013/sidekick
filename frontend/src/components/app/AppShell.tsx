@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { DemoBadge } from "@/components/app/DemoBadge";
 import { Avatar } from "@/components/ui/display";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -195,7 +196,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
   return (
     <div className="min-h-dvh lg:pl-[248px]">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-line bg-canvas lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-line bg-subtle lg:flex">
         <div className="flex h-16 items-center px-5">
           <Logo href="/dashboard" />
         </div>
@@ -210,7 +211,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
       {/* Mobile drawer */}
       {drawer && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <div className="absolute inset-0 animate-fade-in bg-ink/40" onClick={() => setDrawer(false)} />
+          <div className="absolute inset-0 animate-fade-in bg-silver-900/40" onClick={() => setDrawer(false)} />
           <div className="absolute inset-y-0 left-0 flex w-[min(300px,85vw)] animate-slide-in-left flex-col bg-canvas shadow-pop">
             <div className="flex h-14 items-center justify-between px-4">
               <Logo href="/dashboard" />
@@ -252,6 +253,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
             </div>
           </form>
           <div className="ml-auto flex items-center gap-1.5">
+            <DemoBadge className="mr-1" />
             <Link
               href="/notifications"
               className="relative inline-flex size-9 items-center justify-center rounded-lg text-ink-2 transition-colors hover:bg-subtle hover:text-ink"
@@ -283,11 +285,12 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-20 border-b border-line bg-canvas/85 backdrop-blur-md">
         <div className="container-page flex h-16 items-center justify-between gap-3">
           <Logo />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <DemoBadge />
             <ButtonLink href={`/login?next=${encodeURIComponent(pathname)}`} variant="ghost" size="sm">
               Sign in
             </ButtonLink>
-            <ButtonLink href="/register" size="sm">
+            <ButtonLink href="/register" size="sm" className="hidden sm:inline-flex">
               Create account
             </ButtonLink>
           </div>

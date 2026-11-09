@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { api, ApiError, getToken, setToken, UNAUTHORIZED_EVENT } from "@/lib/api";
+import { api, ApiError, getToken, hasLiveToken, setToken, UNAUTHORIZED_EVENT } from "@/lib/api";
+import { getCachedMode, resolveMode } from "@/lib/mode";
 import type { AuthResponse, Role, User } from "@/lib/types";
 
 /**
@@ -35,6 +36,14 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 /** Checks the stored token against the API without touching React state. */
 async function verifySession(): Promise<{ status: Status; user: User | null }> {
+  if (!getCachedMode()) {
+    // Mode not decided yet for this tab. Only a stored live session needs to wait for the probe.
+    if (!hasLiveToken()) {
+      void resolveMode();
+      return { status: "unauthenticated", user: null };
+    }
+    await resolveMode();
+  }
   if (!getToken()) return { status: "unauthenticated", user: null };
   try {
     return { status: "authenticated", user: await api.get<User>("/auth/me") };

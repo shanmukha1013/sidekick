@@ -5,32 +5,49 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Surfaces */
-  --color-canvas: #fafafa;
-  --color-surface: #ffffff;
-  --color-subtle: #f4f4f5;
-  --color-line: #e7e7ea;
-  --color-line-strong: #d4d4d8;
+  /* Sidekick silver palette — the five brand colours, plus two derived tints for raised surfaces
+     and two deeper shades for text contrast. Everything else in the UI references these tokens. */
+  --color-silver-50: #f8f9fa;
+  --color-silver-100: #f1f3f5;
+  --color-silver-200: #e9ecef;
+  --color-silver-300: #dee2e6; /* Main background silver */
+  --color-silver-400: #ced4da; /* Light silver */
+  --color-silver-500: #adb5bd; /* Medium silver */
+  --color-silver-600: #6c757d; /* Secondary silver */
+  --color-silver-700: #495057; /* Deep silver */
+  --color-silver-800: #343a40;
+  --color-silver-900: #212529;
 
-  /* Text */
-  --color-ink: #0b0b0f;
-  --color-ink-2: #3f3f46;
-  --color-muted: #71717a;
-  --color-faint: #a1a1aa;
+  /* Surfaces — 60% light silver canvas, 30% silver surfaces */
+  --color-canvas: #dee2e6;
+  --color-surface: #f1f3f5;
+  --color-subtle: #e9ecef;
+  --color-line: #ced4da;
+  --color-line-strong: #adb5bd;
 
-  /* Brand — Sidekick cobalt */
-  --color-brand: #2f5bea;
-  --color-brand-hover: #2549cf;
-  --color-brand-soft: #eef2fe;
-  --color-brand-ink: #1e3a9e;
+  /* Text — 10% deep silver contrast */
+  --color-ink: #212529;
+  --color-ink-2: #343a40;
+  --color-muted: #495057;
+  --color-faint: #6c757d;
 
-  --shadow-xs: 0 1px 2px 0 rgb(16 24 40 / 0.05);
-  --shadow-card: 0 1px 2px 0 rgb(16 24 40 / 0.04), 0 1px 3px 0 rgb(16 24 40 / 0.03);
-  --shadow-pop: 0 16px 40px -12px rgb(16 24 40 / 0.22), 0 4px 10px -4px rgb(16 24 40 / 0.08);
+  /* Brand — deep silver */
+  --color-brand: #495057;
+  --color-brand-hover: #343a40;
+  --color-brand-soft: #dee2e6;
+  --color-brand-ink: #343a40;
+
+  --shadow-xs: 0 1px 2px 0 rgb(33 37 41 / 0.06);
+  --shadow-card: 0 1px 2px 0 rgb(33 37 41 / 0.06), 0 2px 6px -1px rgb(33 37 41 / 0.05);
+  --shadow-pop: 0 18px 44px -14px rgb(33 37 41 / 0.28), 0 4px 12px -4px rgb(33 37 41 / 0.1);
+  --shadow-lift: 0 1px 0 0 rgb(255 255 255 / 0.7) inset, 0 10px 30px -12px rgb(33 37 41 / 0.25);
 
   --animate-fade-in: fade-in 160ms ease-out;
   --animate-slide-up: slide-up 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-slide-in-left: slide-in-left 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-rise: rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.4s linear infinite;
 
   @keyframes fade-in {
     from { opacity: 0; }
@@ -39,6 +56,18 @@
   @keyframes slide-up {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
   }
   @keyframes slide-in-left {
     from { transform: translateX(-100%); }
@@ -73,7 +102,7 @@
     outline: none;
   }
   dialog::backdrop {
-    background: rgb(9 9 11 / 0.45);
+    background: rgb(33 37 41 / 0.45);
     backdrop-filter: blur(2px);
   }
 }
@@ -89,9 +118,31 @@
 }
 
 @utility bg-grid {
-  background-image: linear-gradient(to right, rgb(16 24 40 / 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(16 24 40 / 0.045) 1px, transparent 1px);
+  background-image: linear-gradient(to right, rgb(73 80 87 / 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(73 80 87 / 0.08) 1px, transparent 1px);
   background-size: 48px 48px;
+}
+
+/* Brushed-silver surface used for hero and brand panels. */
+@utility bg-silver-sheen {
+  background-image: radial-gradient(120% 80% at 50% -10%, #f8f9fa 0%, rgb(248 249 250 / 0) 60%),
+    linear-gradient(180deg, #e9ecef 0%, #dee2e6 55%, #dee2e6 100%);
+}
+
+/* Deep-silver panel (auth side panel, CTA band). */
+@utility bg-silver-deep {
+  background-image: radial-gradient(90% 70% at 85% 0%, rgb(173 181 189 / 0.28) 0%, transparent 60%),
+    linear-gradient(160deg, #495057 0%, #3d434a 55%, #343a40 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 /* ── Leaflet ─────────────────────────────────────────────────────────────── */
