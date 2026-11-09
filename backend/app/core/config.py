@@ -1,4 +1,5 @@
 import logging
+import os
 import secrets
 from typing import List, Optional
 
@@ -55,6 +56,11 @@ class Settings(BaseSettings):
     @property
     def email_enabled(self) -> bool:
         return bool(self.SMTP_HOST and (self.SMTP_FROM or self.SMTP_USER))
+
+    @property
+    def allow_dev_email_fallback(self) -> bool:
+        """Log reset links instead of emailing them — only for local development, never on a hosted server."""
+        return not self.is_production and not os.getenv("RENDER")
 
 
 settings = Settings()

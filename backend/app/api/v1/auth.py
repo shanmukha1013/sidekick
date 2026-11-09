@@ -121,7 +121,7 @@ async def logout(request: Request, user: dict = Depends(get_current_user), db: A
 
 @router.post("/forgot-password")
 async def forgot_password(body: ForgotPasswordIn, db: AsyncIOMotorDatabase = Depends(get_db)):
-    if not settings.email_enabled and settings.is_production:
+    if not settings.email_enabled and not settings.allow_dev_email_fallback:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Password reset by email is not available yet: the server has no email service configured. "
@@ -153,7 +153,7 @@ async def forgot_password(body: ForgotPasswordIn, db: AsyncIOMotorDatabase = Dep
             f"{link}\n\nIf you didn't request this, you can ignore this email.\n\n— Sidekick",
         )
     except EmailNotConfigured:
-        # Development only (production returns 503 above): surface the link in server logs for testing.
+        # Local development only (hosted servers return 503 above): surface the link in server logs for testing.
         logger.warning("SMTP not configured. Development password reset link for %s: %s", user["_id"], link)
     except Exception as exc:  # SMTP failure
         logger.error("Failed to send reset email: %s", exc)
