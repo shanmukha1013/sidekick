@@ -132,7 +132,7 @@ function ApplicantCard({ app, onUpdated }: { app: Application; onUpdated: (a: Ap
               <p className="text-[15px] font-semibold">{p?.full_name || "Applicant"}</p>
               <p className="mt-0.5 text-[13px] text-muted">
                 {p?.headline || `@${p?.username}`} · Applied {formatDate(app.created_at)} for{" "}
-                <Link href={`/jobs/${app.job_id}`} className="font-medium text-ink-2 hover:text-brand-ink">{app.job?.title}</Link>
+                <Link href={`/jobs/${app.job_id}`} className="font-medium text-ink-2 hover:text-brand">{app.job?.title}</Link>
               </p>
             </div>
             <StatusBadge status={app.status} />
@@ -140,12 +140,12 @@ function ApplicantCard({ app, onUpdated }: { app: Application; onUpdated: (a: Ap
 
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-ink-2">
             {p?.email && (
-              <a href={`mailto:${p.email}`} className="inline-flex items-center gap-1.5 hover:text-brand-ink">
+              <a href={`mailto:${p.email}`} className="inline-flex items-center gap-1.5 hover:text-brand">
                 <Mail className="size-3.5 text-faint" /> {p.email}
               </a>
             )}
             {app.phone && (
-              <a href={`tel:${app.phone}`} className="inline-flex items-center gap-1.5 hover:text-brand-ink">
+              <a href={`tel:${app.phone}`} className="inline-flex items-center gap-1.5 hover:text-brand">
                 <Phone className="size-3.5 text-faint" /> {app.phone}
               </a>
             )}
@@ -165,13 +165,13 @@ function ApplicantCard({ app, onUpdated }: { app: Application; onUpdated: (a: Ap
           )}
 
           {app.cover_letter && (
-            <div className="mt-4 rounded-lg border border-line bg-subtle p-3.5">
+            <div className="mt-4 rounded-lg border border-line bg-canvas p-3.5">
               <p className={cn("whitespace-pre-line text-[13.5px] leading-relaxed text-ink-2", !expanded && "line-clamp-3")}>{app.cover_letter}</p>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-muted">
                 {app.expected_rate != null && <span>Expects {formatRate(app.expected_rate)}</span>}
                 {app.availability && <span>Available: {app.availability}</span>}
                 {app.portfolio_links && /^https?:\/\//.test(app.portfolio_links) && (
-                  <a href={app.portfolio_links} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1 text-brand-ink hover:underline">
+                  <a href={app.portfolio_links} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1 text-brand hover:text-brand-hover">
                     Portfolio <ExternalLink className="size-3" />
                   </a>
                 )}

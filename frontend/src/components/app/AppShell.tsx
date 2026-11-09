@@ -107,7 +107,7 @@ function SidebarNav({ user, counts, onNavigate }: { user: User; counts: Counts; 
     <nav aria-label="Main" className="flex flex-col gap-6">
       {navSections(user, counts).map((section, i) => (
         <div key={i}>
-          {section.title && <p className="mb-1.5 px-2.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-yellow/60">{section.title}</p>}
+          {section.title && <p className="mb-1.5 px-2.5 text-[11.5px] font-medium uppercase tracking-[0.06em] text-faint">{section.title}</p>}
           <ul className="flex flex-col gap-0.5">
             {section.items.map((item) => {
               const active = isActive(pathname, item);
@@ -119,15 +119,14 @@ function SidebarNav({ user, counts, onNavigate }: { user: User; counts: Counts; 
                     onClick={onNavigate}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "group relative flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[14px] transition-colors",
-                      active ? "bg-surface font-semibold text-ink shadow-xs" : "text-ink-2 hover:bg-subtle hover:text-accent",
+                      "group flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[14px] transition-colors",
+                      active ? "bg-subtle font-medium text-ink" : "text-ink-2 hover:bg-subtle/70 hover:text-ink",
                     )}
                   >
-                    {active && <span aria-hidden="true" className="absolute -left-3 top-1.5 h-6 w-1 rounded-r-full bg-brand" />}
-                    <Icon className={cn("size-[17px] shrink-0", active ? "text-brand-ink" : "text-muted group-hover:text-accent")} />
+                    <Icon className={cn("size-[17px] shrink-0", active ? "text-ink" : "text-muted group-hover:text-ink-2")} />
                     <span className="flex-1 truncate">{item.label}</span>
                     {!!item.badge && item.badge > 0 && (
-                      <span className="min-w-5 rounded-full bg-brand px-1.5 text-center text-[11px] font-semibold leading-5 text-paper tabular-nums">
+                      <span className="min-w-5 rounded-full bg-brand px-1.5 text-center text-[11px] font-semibold leading-5 text-white tabular-nums">
                         {item.badge > 99 ? "99+" : item.badge}
                       </span>
                     )}
@@ -147,7 +146,7 @@ function UserFooter({ user }: { user: User }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-line bg-canvas p-2.5 shadow-xs">
+    <div className="flex items-center gap-2.5 rounded-lg border border-line bg-surface p-2.5 shadow-xs">
       <Avatar name={user.full_name} size={32} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13.5px] font-medium text-ink">{user.full_name}</p>
@@ -197,7 +196,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
   return (
     <div className="min-h-dvh lg:pl-[248px]">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-line bg-panel lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-line bg-subtle lg:flex">
         <div className="flex h-16 items-center px-5">
           <Logo href="/dashboard" />
         </div>
@@ -212,8 +211,8 @@ export function AppShell({ user, children }: { user: User; children: React.React
       {/* Mobile drawer */}
       {drawer && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <div className="absolute inset-0 animate-fade-in bg-black/70" onClick={() => setDrawer(false)} />
-          <div className="absolute inset-y-0 left-0 flex w-[min(300px,85vw)] animate-slide-in-left flex-col bg-panel shadow-pop">
+          <div className="absolute inset-0 animate-fade-in bg-silver-900/40" onClick={() => setDrawer(false)} />
+          <div className="absolute inset-y-0 left-0 flex w-[min(300px,85vw)] animate-slide-in-left flex-col bg-canvas shadow-pop">
             <div className="flex h-14 items-center justify-between px-4">
               <Logo href="/dashboard" />
               <Button variant="ghost" size="icon-sm" onClick={() => setDrawer(false)} aria-label="Close menu">
@@ -244,12 +243,12 @@ export function AppShell({ user, children }: { user: User; children: React.React
               Search jobs
             </label>
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-yellow/70" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
               <input
                 id="global-search"
                 ref={searchRef}
                 placeholder="Search jobs, skills, companies"
-                className="h-9 w-full rounded-lg border border-field-line bg-panel pl-9 pr-3 text-[13.5px] text-paper shadow-xs placeholder:text-paper/40 focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/35"
+                className="h-9 w-full rounded-lg border border-line bg-surface pl-9 pr-3 text-[13.5px] shadow-xs placeholder:text-faint focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/12"
               />
             </div>
           </form>
@@ -257,11 +256,11 @@ export function AppShell({ user, children }: { user: User; children: React.React
             <DemoBadge className="mr-1" />
             <Link
               href="/notifications"
-              className="relative inline-flex size-9 items-center justify-center rounded-lg text-ink-2 transition-colors hover:bg-subtle hover:text-accent"
+              className="relative inline-flex size-9 items-center justify-center rounded-lg text-ink-2 transition-colors hover:bg-subtle hover:text-ink"
               aria-label={`Notifications${counts.notifications ? `, ${counts.notifications} unread` : ""}`}
             >
               <Bell className="size-[18px]" />
-              {counts.notifications > 0 && <span className="absolute right-2 top-2 size-2 rounded-full bg-yellow ring-2 ring-black" />}
+              {counts.notifications > 0 && <span className="absolute right-2 top-2 size-2 rounded-full bg-brand ring-2 ring-canvas" />}
             </Link>
             {user.roles.includes("employer") && (
               <ButtonLink href="/employer/jobs/new" size="sm" className="ml-1">

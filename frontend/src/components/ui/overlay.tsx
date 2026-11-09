@@ -61,7 +61,7 @@ export function Dialog({
             </Button>
           </div>
           <div className="overflow-y-auto px-5 py-5">{children}</div>
-          {footer && <div className="flex flex-col-reverse gap-2 border-t border-line bg-subtle px-5 py-3.5 sm:flex-row sm:justify-end">{footer}</div>}
+          {footer && <div className="flex flex-col-reverse gap-2 border-t border-line bg-canvas px-5 py-3.5 sm:flex-row sm:justify-end">{footer}</div>}
         </div>
       )}
     </dialog>
@@ -142,9 +142,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 className="pointer-events-auto flex w-full max-w-sm animate-slide-up items-start gap-2.5 rounded-xl border border-line bg-surface px-4 py-3 text-[13.5px] text-ink shadow-pop"
               >
                 {t.tone === "success" ? (
-                  <CheckCircle2 className="mt-px size-4 shrink-0 text-brand-ink" />
+                  <CheckCircle2 className="mt-px size-4 shrink-0 text-silver-700" />
                 ) : (
-                  <AlertCircle className="mt-px size-4 shrink-0 text-brand-ink" />
+                  <AlertCircle className="mt-px size-4 shrink-0 text-red-600" />
                 )}
                 <p className="flex-1 leading-snug">{t.message}</p>
                 <button
@@ -183,7 +183,7 @@ export function Tabs<T extends string>({
   className?: string;
 }) {
   return (
-    <div role="tablist" className={cn("inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-line bg-panel p-1", className)}>
+    <div role="tablist" className={cn("inline-flex max-w-full gap-1 overflow-x-auto rounded-lg border border-line bg-subtle/70 p-1", className)}>
       {items.map((it) => {
         const active = it.value === value;
         return (
@@ -194,12 +194,12 @@ export function Tabs<T extends string>({
             onClick={() => onChange(it.value)}
             className={cn(
               "inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors",
-              active ? "bg-surface text-ink shadow-xs" : "text-muted hover:bg-subtle hover:text-ink",
+              active ? "bg-surface text-ink shadow-xs" : "text-muted hover:text-ink",
             )}
           >
             {it.label}
             {typeof it.count === "number" && (
-              <span className={cn("rounded px-1 text-[11.5px] tabular-nums", active ? "bg-black text-yellow" : "text-faint")}>{it.count}</span>
+              <span className={cn("rounded px-1 text-[11.5px] tabular-nums", active ? "bg-subtle text-ink-2" : "text-faint")}>{it.count}</span>
             )}
           </button>
         );

@@ -75,7 +75,7 @@ function LoginForm() {
       {demo && (
         <div className="mt-6 rounded-xl border border-line bg-subtle p-4">
           <p className="flex items-center gap-2 text-[13px] font-semibold text-ink">
-            <HardDrive className="size-4 text-accent" /> Demo mode — local data
+            <HardDrive className="size-4 text-silver-700" /> Demo mode — local data
           </p>
           <p className="mt-1 text-[13px] leading-relaxed text-muted">
             The live server is unavailable, so sign-in uses demo accounts stored in this browser.
@@ -146,7 +146,7 @@ function LoginForm() {
           label="Password"
           error={errors.password}
           action={
-            <Link href="/forgot-password" className="text-[13px] font-medium text-brand-ink hover:underline">
+            <Link href="/forgot-password" className="text-[13px] font-medium text-brand hover:text-brand-hover">
               Forgot password?
             </Link>
           }
@@ -173,7 +173,7 @@ function LoginForm() {
 
       <p className="mt-8 text-center text-[14px] text-muted">
         New to Sidekick?{" "}
-        <Link href="/register" className="font-medium text-ink hover:text-brand-ink">
+        <Link href="/register" className="font-medium text-ink hover:text-brand">
           Create an account
         </Link>
       </p>

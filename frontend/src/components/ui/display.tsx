@@ -37,12 +37,12 @@ export const badgeVariants = cva(
       tone: {
         neutral: "border-line bg-subtle text-ink-2",
         outline: "border-line bg-surface text-ink-2",
-        brand: "border-brand bg-brand text-paper",
-        success: "border-brand bg-brand text-paper",
-        warning: "border-black bg-black text-yellow",
+        brand: "border-brand/15 bg-brand-soft text-brand-ink",
+        success: "border-silver-700 bg-silver-700 text-silver-50",
+        warning: "border-silver-500 bg-silver-400 text-silver-900",
         danger: "border-line bg-surface text-faint line-through decoration-faint/60",
-        violet: "border-brand/50 bg-brand-soft text-brand-ink",
-        solid: "border-black bg-black text-yellow",
+        violet: "border-silver-500 bg-silver-400 text-silver-900",
+        solid: "border-silver-800 bg-silver-800 text-silver-50",
       },
     },
     defaultVariants: { tone: "neutral" },
@@ -53,7 +53,7 @@ export function Badge({ className, tone, ...props }: React.HTMLAttributes<HTMLSp
   return <span className={cn(badgeVariants({ tone }), className)} {...props} />;
 }
 
-/** Application statuses are told apart by icon and brand weight (outline → tint → black → purple). */
+/** Application statuses are told apart by icon and silver weight (outline → light → medium → deep). */
 const STATUS: Record<ApplicationStatus, { label: string; tone: VariantProps<typeof badgeVariants>["tone"]; icon: LucideIcon }> = {
   pending: { label: "Submitted", tone: "outline", icon: Send },
   reviewing: { label: "In review", tone: "neutral", icon: Eye },
@@ -78,10 +78,12 @@ export function StatusBadge({ status }: { status: ApplicationStatus | string }) 
 export const statusLabel = (s: string) => STATUS[s as ApplicationStatus]?.label || s;
 
 const AVATAR_TONES = [
-  "bg-brand text-paper",
-  "bg-black text-yellow ring-1 ring-yellow/30",
-  "bg-gradient-to-br from-brand to-black text-yellow",
-  "bg-yellow text-black ring-1 ring-black/20",
+  "bg-silver-700 text-silver-50",
+  "bg-silver-600 text-silver-50",
+  "bg-silver-500 text-silver-900",
+  "bg-silver-400 text-silver-800",
+  "bg-silver-800 text-silver-100",
+  "bg-gradient-to-br from-silver-500 to-silver-700 text-silver-50",
 ];
 
 function toneFor(seed: string) {
@@ -126,7 +128,7 @@ export function Stat({ label, value, hint, icon }: { label: string; value: React
         <span>{label}</span>
         {icon && <span className="flex size-7 items-center justify-center rounded-md border border-line bg-subtle text-muted [&_svg]:size-3.5">{icon}</span>}
       </div>
-      <div className="mt-2 text-[28px] font-bold leading-none tracking-[-0.03em] text-brand-ink tabular-nums">{value}</div>
+      <div className="mt-2 text-[26px] font-semibold leading-none tracking-[-0.02em] text-ink tabular-nums">{value}</div>
       {hint && <div className="mt-1.5 text-[12.5px] text-muted">{hint}</div>}
     </Card>
   );
@@ -146,7 +148,7 @@ export function PageHeader({
   return (
     <div className={cn("mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
       <div className="min-w-0">
-        <h1 className="text-[24px] font-semibold tracking-[-0.03em] text-accent sm:text-[28px]">{title}</h1>
+        <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-ink sm:text-2xl">{title}</h1>
         {description && <p className="mt-1 text-[14px] text-muted">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}

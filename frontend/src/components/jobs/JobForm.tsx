@@ -201,7 +201,7 @@ export function JobForm({
       <Card className="p-5 sm:p-6">
         <h2 className="text-[15px] font-semibold">Location</h2>
         <div className="mt-4 flex flex-col gap-4">
-          <div className="inline-flex w-fit rounded-lg border border-line bg-subtle p-1" role="radiogroup" aria-label="Work mode">
+          <div className="inline-flex w-fit rounded-lg border border-line bg-subtle/70 p-1" role="radiogroup" aria-label="Work mode">
             {[
               { v: false, label: "On-site" },
               { v: true, label: "Remote" },
@@ -214,7 +214,7 @@ export function JobForm({
                 onClick={() => set("is_remote", o.v)}
                 className={cn(
                   "rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-colors",
-                  f.is_remote === o.v ? "bg-black text-yellow shadow-xs" : "text-muted hover:text-ink",
+                  f.is_remote === o.v ? "bg-surface text-ink shadow-xs" : "text-muted hover:text-ink",
                 )}
               >
                 {o.label}
@@ -227,7 +227,7 @@ export function JobForm({
           {!f.is_remote && (
             <div className="flex flex-wrap items-center gap-3">
               {f.lat != null && f.lng != null ? (
-                <span className="inline-flex items-center gap-2 rounded-lg border border-line bg-subtle px-3 py-1.5 text-[13px] text-ink-2">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-line bg-canvas px-3 py-1.5 text-[13px] text-ink-2">
                   Pinned at {f.lat.toFixed(4)}, {f.lng.toFixed(4)}
                   <button type="button" onClick={() => setF((c) => ({ ...c, lat: null, lng: null }))} className="text-faint hover:text-ink" aria-label="Remove map pin">
                     <X className="size-3.5" />
@@ -238,7 +238,7 @@ export function JobForm({
                   {!locating && <LocateFixed />} Pin my current location on the map
                 </Button>
               )}
-              {geoError && <span className="text-[12.5px] font-medium text-danger">{geoError}</span>}
+              {geoError && <span className="text-[12.5px] text-red-600">{geoError}</span>}
             </div>
           )}
         </div>

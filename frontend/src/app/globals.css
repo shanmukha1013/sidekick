@@ -1,59 +1,53 @@
 @import "tailwindcss";
 
-/* ── Sidekick design system ─────────────────────────────────────────────────
-   Three brand colours only:  BLACK #0B0B0F · YELLOW #FACC15 · PURPLE #7028D8
-   Distribution: 60% black (canvas, navigation, sidebar) · 30% yellow (cards,
-   panels, selected/hover states, secondary buttons) · 10% purple (primary CTAs,
-   active indicators, highlights, key statistics).
-
-   Text and borders are opacity variations of the brand colours. They are
-   *contextual*: the defaults below are for black surfaces; any yellow surface
-   (`bg-surface`) re-declares them for black-on-yellow (see "Surface contexts"). */
+/* ── Sidekick design tokens ─────────────────────────────────────────────── */
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Brand primitives */
-  --color-black: #0b0b0f;
-  --color-yellow: #facc15;
-  --color-purple: #7028d8;
-  --color-paper: #fffbec; /* near-white tint of the brand yellow, for text on black/purple */
+  /* Sidekick silver palette — the five brand colours, plus two derived tints for raised surfaces
+     and two deeper shades for text contrast. Everything else in the UI references these tokens. */
+  --color-silver-50: #f8f9fa;
+  --color-silver-100: #f1f3f5;
+  --color-silver-200: #e9ecef;
+  --color-silver-300: #dee2e6; /* Main background silver */
+  --color-silver-400: #ced4da; /* Light silver */
+  --color-silver-500: #adb5bd; /* Medium silver */
+  --color-silver-600: #6c757d; /* Secondary silver */
+  --color-silver-700: #495057; /* Deep silver */
+  --color-silver-800: #343a40;
+  --color-silver-900: #212529;
 
-  /* Surfaces */
-  --color-canvas: #0b0b0f; /* 60% — app background */
-  --color-panel: #151410; /* black lifted with 4% yellow — sidebar, nav, dark panels */
-  --color-surface: #facc15; /* 30% — cards & panels */
-  --color-field: #0b0b0f; /* inputs */
+  /* Surfaces — 60% light silver canvas, 30% silver surfaces */
+  --color-canvas: #dee2e6;
+  --color-surface: #f1f3f5;
+  --color-subtle: #e9ecef;
+  --color-line: #ced4da;
+  --color-line-strong: #adb5bd;
 
-  /* Contextual tokens (black-surface values) */
-  --color-ink: #fffbec;
-  --color-ink-2: rgb(255 251 236 / 0.86);
-  --color-muted: rgb(255 251 236 / 0.64);
-  --color-faint: rgb(255 251 236 / 0.46);
-  --color-line: rgb(250 204 21 / 0.14);
-  --color-line-strong: rgb(250 204 21 / 0.3);
-  --color-subtle: rgb(250 204 21 / 0.08);
-  --color-accent: #facc15;
-  --color-danger: #c4a1f5;
-  --color-field-line: rgb(250 204 21 / 0.22);
+  /* Text — 10% deep silver contrast */
+  --color-ink: #212529;
+  --color-ink-2: #343a40;
+  --color-muted: #495057;
+  --color-faint: #6c757d;
 
-  /* Brand — electric purple (10%) */
-  --color-brand: #7028d8;
-  --color-brand-hover: #6124ba;
-  --color-brand-soft: rgb(112 40 216 / 0.16);
-  --color-brand-ink: #c4a1f5;
+  /* Brand — deep silver */
+  --color-brand: #495057;
+  --color-brand-hover: #343a40;
+  --color-brand-soft: #dee2e6;
+  --color-brand-ink: #343a40;
 
-  --shadow-xs: 0 1px 2px 0 rgb(11 11 15 / 0.25);
-  --shadow-card: 0 1px 2px 0 rgb(11 11 15 / 0.3), 0 8px 24px -16px rgb(11 11 15 / 0.6);
-  --shadow-pop: 0 24px 60px -18px rgb(0 0 0 / 0.75), 0 0 0 1px rgb(250 204 21 / 0.08);
-  --shadow-lift: 0 18px 40px -18px rgb(112 40 216 / 0.55), 0 2px 6px -2px rgb(11 11 15 / 0.4);
-  --shadow-glow: 0 10px 30px -10px rgb(112 40 216 / 0.85);
+  --shadow-xs: 0 1px 2px 0 rgb(33 37 41 / 0.06);
+  --shadow-card: 0 1px 2px 0 rgb(33 37 41 / 0.06), 0 2px 6px -1px rgb(33 37 41 / 0.05);
+  --shadow-pop: 0 18px 44px -14px rgb(33 37 41 / 0.28), 0 4px 12px -4px rgb(33 37 41 / 0.1);
+  --shadow-lift: 0 1px 0 0 rgb(255 255 255 / 0.7) inset, 0 10px 30px -12px rgb(33 37 41 / 0.25);
 
   --animate-fade-in: fade-in 160ms ease-out;
   --animate-slide-up: slide-up 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-slide-in-left: slide-in-left 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-rise: rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-float: float 7s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.4s linear infinite;
 
   @keyframes fade-in {
     from { opacity: 0; }
@@ -71,73 +65,20 @@
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-6px); }
   }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
   @keyframes slide-in-left {
     from { transform: translateX(-100%); }
     to { transform: translateX(0); }
   }
 }
 
-/* ── Surface contexts ───────────────────────────────────────────────────────
-   Yellow surfaces switch their subtree to black text/borders; black and purple
-   surfaces (including ones nested inside yellow cards) switch back. */
 @layer base {
-  .bg-surface,
-  .bg-surface\/80,
-  .bg-surface\/70,
-  .hover\:bg-surface:hover,
-  .bg-yellow,
-  .ctx-yellow {
-    --color-ink: #0b0b0f;
-    --color-ink-2: rgb(11 11 15 / 0.86);
-    --color-muted: rgb(11 11 15 / 0.72);
-    --color-faint: rgb(11 11 15 / 0.56);
-    --color-line: rgb(11 11 15 / 0.14);
-    --color-line-strong: rgb(11 11 15 / 0.32);
-    --color-subtle: rgb(11 11 15 / 0.07);
-    --color-accent: #7028d8;
-    --color-danger: #5b1fb8;
-    --color-brand-ink: #5b1fb8;
-    --color-field-line: #0b0b0f;
-    color: var(--color-ink);
-  }
-
-  .bg-canvas,
-  .bg-canvas\/85,
-  .bg-canvas\/90,
-  .bg-canvas\/80,
-  .bg-canvas\/50,
-  .bg-panel,
-  .bg-panel\/90,
-  .bg-black,
-  .bg-brand,
-  .bg-hero,
-  .bg-brand-panel,
-  .ctx-dark {
-    --color-ink: #fffbec;
-    --color-ink-2: rgb(255 251 236 / 0.86);
-    --color-muted: rgb(255 251 236 / 0.64);
-    --color-faint: rgb(255 251 236 / 0.46);
-    --color-line: rgb(250 204 21 / 0.14);
-    --color-line-strong: rgb(250 204 21 / 0.3);
-    --color-subtle: rgb(250 204 21 / 0.08);
-    --color-accent: #facc15;
-    --color-danger: #c4a1f5;
-    --color-brand-ink: #c4a1f5;
-    --color-field-line: rgb(250 204 21 / 0.22);
-    color: var(--color-ink);
-  }
-  .bg-brand,
-  .bg-brand-panel {
-    --color-line: rgb(255 251 236 / 0.18);
-    --color-line-strong: rgb(255 251 236 / 0.32);
-    --color-subtle: rgb(255 251 236 / 0.1);
-    --color-muted: rgb(255 251 236 / 0.74);
-  }
-
   html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
-    color-scheme: dark;
   }
   body {
     @apply bg-canvas text-ink font-sans antialiased;
@@ -149,11 +90,10 @@
     border-color: var(--color-line);
   }
   ::selection {
-    background: rgb(112 40 216 / 0.55);
-    color: #fffbec;
+    background: color-mix(in srgb, var(--color-brand) 18%, transparent);
   }
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-brand);
     outline-offset: 2px;
   }
   input:focus-visible,
@@ -161,26 +101,9 @@
   select:focus-visible {
     outline: none;
   }
-  option {
-    background: #0b0b0f;
-    color: #fffbec;
-  }
   dialog::backdrop {
-    background: rgb(11 11 15 / 0.72);
-    backdrop-filter: blur(3px);
-  }
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: rgb(250 204 21 / 0.18);
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgb(33 37 41 / 0.45);
+    backdrop-filter: blur(2px);
   }
 }
 
@@ -195,29 +118,21 @@
 }
 
 @utility bg-grid {
-  background-image: linear-gradient(to right, rgb(250 204 21 / 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(250 204 21 / 0.06) 1px, transparent 1px);
+  background-image: linear-gradient(to right, rgb(73 80 87 / 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(73 80 87 / 0.08) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
-/* Black hero with a purple glow from above. */
-@utility bg-hero {
-  background-color: #0b0b0f;
-  background-image: radial-gradient(70% 55% at 50% -8%, rgb(112 40 216 / 0.55) 0%, rgb(112 40 216 / 0) 70%),
-    radial-gradient(40% 30% at 85% 10%, rgb(250 204 21 / 0.1) 0%, transparent 70%);
+/* Brushed-silver surface used for hero and brand panels. */
+@utility bg-silver-sheen {
+  background-image: radial-gradient(120% 80% at 50% -10%, #f8f9fa 0%, rgb(248 249 250 / 0) 60%),
+    linear-gradient(180deg, #e9ecef 0%, #dee2e6 55%, #dee2e6 100%);
 }
 
-/* Rich electric-purple panel (auth side panel, employer band). */
-@utility bg-brand-panel {
-  background-color: #7028d8;
-  background-image: radial-gradient(80% 70% at 90% 0%, rgb(250 204 21 / 0.22) 0%, transparent 60%),
-    linear-gradient(155deg, #7c33e6 0%, #7028d8 45%, #4f1a9c 100%);
-}
-
-/* Large headline accent: yellow text with a soft glow. */
-@utility text-glow {
-  color: #facc15;
-  text-shadow: 0 0 32px rgb(250 204 21 / 0.25);
+/* Deep-silver panel (auth side panel, CTA band). */
+@utility bg-silver-deep {
+  background-image: radial-gradient(90% 70% at 85% 0%, rgb(173 181 189 / 0.28) 0%, transparent 60%),
+    linear-gradient(160deg, #495057 0%, #3d434a 55%, #343a40 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -230,39 +145,22 @@
   }
 }
 
-/* ── Leaflet (dark, warm-toned tiles to match the palette) ───────────────── */
+/* ── Leaflet ─────────────────────────────────────────────────────────────── */
 .leaflet-container {
   z-index: 0 !important;
   font-family: inherit;
-  background: #151410;
-}
-.leaflet-tile-pane {
-  filter: grayscale(1) invert(1) brightness(0.85) sepia(0.35) contrast(0.95);
-}
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background: #facc15;
-  color: #0b0b0f;
+  background: var(--color-subtle);
 }
 .leaflet-popup-content-wrapper {
   border-radius: 10px;
+  border: 1px solid var(--color-line);
   box-shadow: var(--shadow-pop);
 }
 .leaflet-popup-content {
   margin: 12px 14px;
 }
-.leaflet-container a {
-  color: #5b1fb8;
-}
 .leaflet-control-attribution {
   font-size: 10px;
-  background: rgb(11 11 15 / 0.7) !important;
-  color: rgb(255 251 236 / 0.6);
-}
-.leaflet-bar a {
-  background: #151410;
-  color: #fffbec;
-  border-color: rgb(250 204 21 / 0.2);
 }
 .job-map-marker {
   background: none;

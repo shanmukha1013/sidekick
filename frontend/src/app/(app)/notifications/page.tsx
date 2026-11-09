@@ -77,7 +77,7 @@ export default function NotificationsPage() {
               const Icon = ICONS[n.type] || Bell;
               return (
                 <li key={n.id}>
-                  <button onClick={() => open(n)} className={cn("flex w-full items-start gap-3.5 px-4 py-4 text-left transition-colors hover:bg-subtle sm:px-5", !n.is_read && "bg-subtle")}>
+                  <button onClick={() => open(n)} className={cn("flex w-full items-start gap-3.5 px-4 py-4 text-left transition-colors hover:bg-canvas sm:px-5", !n.is_read && "bg-brand-soft/40")}>
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-ink-2">
                       <Icon className="size-4" />
                     </span>

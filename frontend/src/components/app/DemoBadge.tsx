@@ -58,14 +58,14 @@ export function DemoBadge({ align = "right", className }: { align?: "left" | "ri
         }}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full border border-yellow/45 bg-yellow/10 px-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-yellow shadow-xs transition-colors hover:bg-yellow/20"
+        className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full border border-silver-500 bg-silver-200 px-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-silver-800 shadow-xs transition-colors hover:bg-silver-400/70"
       >
         <span className="relative flex size-1.5">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand opacity-80" />
-          <span className="relative inline-flex size-1.5 rounded-full bg-brand" />
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-silver-600 opacity-60" />
+          <span className="relative inline-flex size-1.5 rounded-full bg-silver-700" />
         </span>
         Demo mode
-        <span className="hidden font-medium normal-case tracking-normal text-yellow/70 sm:inline">— Local data</span>
+        <span className="hidden font-medium normal-case tracking-normal text-silver-600 sm:inline">— Local data</span>
       </button>
 
       {open && (
@@ -78,7 +78,7 @@ export function DemoBadge({ align = "right", className }: { align?: "left" | "ri
           )}
         >
           <div className="flex items-start gap-3">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-black text-yellow">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-subtle text-silver-700">
               <HardDrive className="size-4" />
             </span>
             <div className="min-w-0 flex-1">

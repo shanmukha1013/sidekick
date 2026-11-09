@@ -9,7 +9,7 @@ import type { Job } from "@/lib/types";
 import { formatRate } from "@/lib/format";
 
 const markerIcon = L.divIcon({
-  html: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="34" viewBox="0 0 28 34"><path d="M14 33s11-9.6 11-19A11 11 0 0 0 3 14c0 9.4 11 19 11 19z" fill="#7028D8" stroke="#FACC15" stroke-width="2"/><circle cx="14" cy="14" r="4" fill="#FACC15"/></svg>`,
+  html: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="34" viewBox="0 0 28 34"><path d="M14 33s11-9.6 11-19A11 11 0 0 0 3 14c0 9.4 11 19 11 19z" fill="#495057" stroke="#F8F9FA" stroke-width="2"/><circle cx="14" cy="14" r="4" fill="#CED4DA"/></svg>`,
   className: "job-map-marker",
   iconSize: [28, 34],
   iconAnchor: [14, 33],
@@ -42,12 +42,12 @@ export default function JobMap({ jobs }: { jobs: Job[] }) {
       {located.map((job) => (
         <Marker key={job.id} position={[job.lat as number, job.lng as number]} icon={markerIcon}>
           <Popup>
-            <div className="ctx-yellow min-w-[180px] font-sans">
+            <div className="min-w-[180px] font-sans">
               <p className="text-[13.5px] font-semibold text-ink">{job.title}</p>
               <p className="mt-0.5 text-[12px] text-muted">{job.company_name}</p>
               <div className="mt-2 flex items-center justify-between gap-3 border-t border-line pt-2">
                 <span className="text-[12.5px] font-semibold text-ink">{formatRate(job.hourly_rate)}</span>
-                <Link href={`/jobs/${job.id}`} className="text-[12.5px] font-medium !text-brand-ink">
+                <Link href={`/jobs/${job.id}`} className="text-[12.5px] font-medium !text-brand">
                   View job
                 </Link>
               </div>

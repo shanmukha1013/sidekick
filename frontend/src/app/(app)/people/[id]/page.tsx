@@ -63,7 +63,7 @@ export default function PersonPage() {
                 <ul className="mt-2 space-y-1">
                   {p.portfolio_links.map((l) => (
                     <li key={l}>
-                      <a href={l} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1.5 text-[14px] text-brand-ink hover:underline">
+                      <a href={l} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1.5 text-[14px] text-brand hover:text-brand-hover">
                         {l.replace(/^https?:\/\//, "")} <ExternalLink className="size-3" />
                       </a>
                     </li>
@@ -79,7 +79,7 @@ export default function PersonPage() {
                   <div>
                     <p className="inline-flex items-center gap-1.5 text-[14.5px] font-medium"><Building2 className="size-4 text-faint" />{p.company_name}</p>
                     {p.company_website && /^https?:\/\//.test(p.company_website) && (
-                      <a href={p.company_website} target="_blank" rel="noopener noreferrer nofollow" className="mt-0.5 flex items-center gap-1 text-[13px] text-brand-ink hover:underline">
+                      <a href={p.company_website} target="_blank" rel="noopener noreferrer nofollow" className="mt-0.5 flex items-center gap-1 text-[13px] text-brand hover:text-brand-hover">
                         <Globe className="size-3.5" /> {p.company_website.replace(/^https?:\/\//, "")}
                       </a>
                     )}
@@ -87,7 +87,7 @@ export default function PersonPage() {
                 </div>
                 {p.company_description && <p className="mt-3 whitespace-pre-line text-[14px] leading-relaxed text-ink-2">{p.company_description}</p>}
                 {p.roles.includes("employer") && (
-                  <Link href={`/jobs?q=${encodeURIComponent(p.company_name)}`} className="mt-3 inline-block text-[13px] font-medium text-brand-ink hover:underline">
+                  <Link href={`/jobs?q=${encodeURIComponent(p.company_name)}`} className="mt-3 inline-block text-[13px] font-medium text-brand hover:text-brand-hover">
                     See open jobs from {p.company_name}
                   </Link>
                 )}

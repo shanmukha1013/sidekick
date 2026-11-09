@@ -5,9 +5,9 @@ import { ChevronDown, Eye, EyeOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const controlBase =
-  "w-full rounded-lg border bg-field text-[14px] text-paper shadow-xs transition-[border-color,box-shadow] duration-150 placeholder:text-paper/40 disabled:cursor-not-allowed disabled:border-line-strong disabled:bg-subtle disabled:text-ink-2 focus:outline-none focus:ring-4";
-const controlOk = "border-field-line hover:border-yellow/50 focus:border-brand focus:ring-brand/35";
-const controlErr = "border-danger focus:border-danger focus:ring-brand/35";
+  "w-full rounded-lg border bg-surface text-[14px] text-ink shadow-xs transition-[border-color,box-shadow] duration-150 placeholder:text-faint disabled:cursor-not-allowed disabled:bg-subtle disabled:text-muted focus:outline-none focus:ring-4";
+const controlOk = "border-line hover:border-line-strong focus:border-brand focus:ring-brand/12";
+const controlErr = "border-red-400 focus:border-red-500 focus:ring-red-500/12";
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;
@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ c
   if (leading) {
     return (
       <div className={cn("relative", containerClassName)}>
-        <span className="pointer-events-none absolute inset-y-0 left-3 z-10 flex items-center text-yellow/70 [&_svg]:size-4">{leading}</span>
+        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-faint [&_svg]:size-4">{leading}</span>
         <input
           ref={ref}
           aria-invalid={invalid || undefined}
@@ -57,7 +57,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputProps, "type
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-paper/50 transition-colors hover:text-yellow"
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-faint transition-colors hover:text-ink-2"
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
       >
@@ -93,7 +93,7 @@ export const Select = forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<H
         >
           {children}
         </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-yellow/70" aria-hidden="true" />
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-faint" aria-hidden="true" />
       </div>
     );
   },
@@ -131,7 +131,7 @@ export function Field({
           {label && (
             <Label htmlFor={controlId}>
               {label}
-              {required && <span className="ml-0.5 text-accent" aria-hidden="true">*</span>}
+              {required && <span className="ml-0.5 text-red-500" aria-hidden="true">*</span>}
             </Label>
           )}
           {action}
@@ -141,7 +141,7 @@ export function Field({
         ? cloneElement(children, { id: controlId, "aria-describedby": describedBy, invalid: !!error })
         : children}
       {error ? (
-        <p id={`${id}-error`} className="text-[12.5px] font-medium text-danger" role="alert">
+        <p id={`${id}-error`} className="text-[12.5px] text-red-600" role="alert">
           {error}
         </p>
       ) : hint ? (
@@ -187,17 +187,17 @@ export function TagInput({
     <div className="flex flex-col gap-2">
       <div
         className={cn(
-          "flex min-h-10 flex-wrap items-center gap-1.5 rounded-lg border bg-field px-2 py-1.5 shadow-xs transition-[border-color,box-shadow] focus-within:ring-4",
-          invalid ? controlErr : "border-field-line focus-within:border-brand focus-within:ring-brand/35",
+          "flex min-h-10 flex-wrap items-center gap-1.5 rounded-lg border bg-surface px-2 py-1.5 shadow-xs transition-[border-color,box-shadow] focus-within:ring-4",
+          invalid ? controlErr : "border-line focus-within:border-brand focus-within:ring-brand/12",
         )}
       >
         {value.map((tag) => (
-          <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-yellow py-0.5 pl-2 pr-1 text-[13px] font-medium text-black">
+          <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-subtle py-0.5 pl-2 pr-1 text-[13px] text-ink-2">
             {tag}
             <button
               type="button"
               onClick={() => onChange(value.filter((t) => t !== tag))}
-              className="rounded p-0.5 text-black/60 hover:bg-black/10 hover:text-black"
+              className="rounded p-0.5 text-faint hover:bg-line hover:text-ink"
               aria-label={`Remove ${tag}`}
             >
               <X className="size-3" />
@@ -222,7 +222,7 @@ export function TagInput({
           }}
           onBlur={() => draft && add(draft)}
           placeholder={value.length ? "" : placeholder}
-          className="h-7 min-w-[8rem] flex-1 bg-transparent px-1 text-[14px] text-paper placeholder:text-paper/40 focus:outline-none"
+          className="h-7 min-w-[8rem] flex-1 bg-transparent px-1 text-[14px] text-ink placeholder:text-faint focus:outline-none"
         />
       </div>
       {remaining.length > 0 && (
@@ -232,7 +232,7 @@ export function TagInput({
               key={s}
               type="button"
               onClick={() => add(s)}
-              className="rounded-md border border-dashed border-line-strong px-2 py-0.5 text-[12.5px] text-muted transition-colors hover:border-accent hover:text-accent"
+              className="rounded-md border border-dashed border-line-strong px-2 py-0.5 text-[12.5px] text-muted transition-colors hover:border-brand hover:text-brand"
             >
               + {s}
             </button>
@@ -265,7 +265,7 @@ export function ChipSelect({
             onClick={() => onChange(active ? value.filter((v) => v !== opt) : [...value, opt])}
             className={cn(
               "rounded-full border px-3 py-1 text-[13px] transition-colors",
-              active ? "border-brand bg-brand text-paper shadow-glow" : "border-line-strong bg-transparent text-ink-2 hover:border-accent hover:text-accent",
+              active ? "border-silver-700 bg-silver-700 text-silver-50" : "border-line bg-surface text-ink-2 hover:border-line-strong",
             )}
           >
             {opt}
