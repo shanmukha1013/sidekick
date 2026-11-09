@@ -56,7 +56,7 @@ export function SaveButton({
   if (variant === "full")
     return (
       <Button variant="secondary" onClick={toggle} disabled={busy} aria-pressed={saved}>
-        <Icon className={cn(saved && "text-brand")} /> {saved ? "Saved" : "Save"}
+        <Icon className={cn(saved && "text-brand-ink")} /> {saved ? "Saved" : "Save"}
       </Button>
     );
   return (
@@ -68,7 +68,7 @@ export function SaveButton({
       aria-pressed={saved}
       aria-label={saved ? "Remove from saved jobs" : "Save job"}
       title={saved ? "Saved" : "Save job"}
-      className={cn(saved && "text-brand hover:text-brand")}
+      className={cn(saved && "text-brand-ink hover:text-brand-ink")}
     >
       <Icon />
     </Button>
@@ -101,8 +101,8 @@ export function JobCard({
   return (
     <article
       className={cn(
-        "group relative rounded-xl border bg-surface p-4 shadow-card transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-lift sm:p-5",
-        highlight ? "border-silver-600" : "border-line",
+        "group relative rounded-xl border bg-surface p-4 shadow-card hover:ring-2 hover:ring-brand/60 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-lift sm:p-5",
+        highlight ? "border-brand ring-2 ring-brand/40" : "border-black/10",
       )}
     >
       <div className="flex items-start gap-3.5">

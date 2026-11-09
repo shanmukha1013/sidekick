@@ -56,7 +56,7 @@ export default function MessagesPage() {
                       onClick={() => select(t.application_id)}
                       className={cn(
                         "flex w-full items-start gap-3 border-b border-line px-4 py-3 text-left transition-colors",
-                        t.application_id === active ? "bg-subtle" : "hover:bg-canvas",
+                        t.application_id === active ? "bg-subtle" : "hover:bg-subtle",
                       )}
                     >
                       <Avatar name={t.counterpart_name} src={t.counterpart_avatar} size={36} square={t.my_side === "applicant"} />
@@ -163,7 +163,7 @@ function Conversation({ applicationId, thread, onBack, onActivity }: { applicati
             <Avatar name={thread.counterpart_name} src={thread.counterpart_avatar} size={34} square={thread.my_side === "applicant"} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-semibold">{thread.counterpart_name}</p>
-              <Link href={`/jobs/${thread.job_id}`} className="block truncate text-[12.5px] text-muted hover:text-brand">
+              <Link href={`/jobs/${thread.job_id}`} className="block truncate text-[12.5px] text-muted hover:text-brand-ink">
                 {thread.job_title}
               </Link>
             </div>
@@ -193,7 +193,7 @@ function Conversation({ applicationId, thread, onBack, onActivity }: { applicati
                     <p
                       className={cn(
                         "whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[14px] leading-relaxed",
-                        mine ? "rounded-br-md bg-silver-700 text-silver-50" : "rounded-bl-md border border-line bg-surface text-ink",
+                        mine ? "rounded-br-md bg-brand text-paper" : "rounded-bl-md border border-black/10 bg-surface text-ink",
                       )}
                     >
                       {m.body}
@@ -222,7 +222,7 @@ function Conversation({ applicationId, thread, onBack, onActivity }: { applicati
           }}
           maxLength={4000}
           placeholder="Write a message…"
-          className="max-h-40 min-h-10 flex-1 resize-none rounded-lg border border-line bg-surface px-3 py-2 text-[14px] shadow-xs placeholder:text-faint focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/12"
+          className="max-h-40 min-h-10 flex-1 resize-none rounded-lg border border-field-line bg-field px-3 py-2 text-[14px] text-paper shadow-xs placeholder:text-paper/40 focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/35"
         />
         <Button type="submit" size="icon" loading={sending} disabled={!draft.trim()} aria-label="Send message" className="h-10 w-10">
           {!sending && <Send />}

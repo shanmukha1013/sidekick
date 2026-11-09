@@ -77,7 +77,7 @@ function SeekerDashboard() {
               {hasSkills ? "Ranked by your skills and interests." : "Add skills to your profile for personalised recommendations."}
             </p>
           </div>
-          <Link href="/jobs" className="inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-brand hover:text-brand-hover">
+          <Link href="/jobs" className="inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-brand-ink hover:underline">
             Browse all <ArrowRight className="size-3.5" />
           </Link>
         </div>
@@ -104,7 +104,7 @@ function SeekerDashboard() {
       <Card>
         <CardHeader
           title="Recent applications"
-          action={<Link href="/applications" className="text-[13px] font-medium text-brand hover:text-brand-hover">View all</Link>}
+          action={<Link href="/applications" className="text-[13px] font-medium text-brand-ink hover:underline">View all</Link>}
         />
         {apps.loading ? (
           <div className="space-y-3 p-5"><Skeleton className="h-10" /><Skeleton className="h-10" /></div>
@@ -114,7 +114,7 @@ function SeekerDashboard() {
           <ul className="divide-y divide-line">
             {list.slice(0, 5).map((a) => (
               <li key={a.id}>
-                <Link href={a.job ? `/jobs/${a.job.id}` : "/applications"} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-canvas">
+                <Link href={a.job ? `/jobs/${a.job.id}` : "/applications"} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-subtle">
                   <Avatar name={a.job?.company_name || a.job?.title} size={34} square />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-medium">{a.job?.title || "Job no longer available"}</p>
@@ -153,7 +153,7 @@ function EmployerDashboard() {
         <CardHeader
           title="Recent applicants"
           description="The newest applications across your listings."
-          action={<Link href="/employer/applicants" className="text-[13px] font-medium text-brand hover:text-brand-hover">Manage</Link>}
+          action={<Link href="/employer/applicants" className="text-[13px] font-medium text-brand-ink hover:underline">Manage</Link>}
         />
         {apps.loading ? (
           <div className="space-y-3 p-5"><Skeleton className="h-10" /><Skeleton className="h-10" /></div>
@@ -165,7 +165,7 @@ function EmployerDashboard() {
           <ul className="divide-y divide-line">
             {received.slice(0, 6).map((a) => (
               <li key={a.id}>
-                <Link href={`/employer/applicants?job=${a.job_id}`} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-canvas">
+                <Link href={`/employer/applicants?job=${a.job_id}`} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-subtle">
                   <Avatar name={a.applicant?.full_name} src={a.applicant?.avatar_url} size={34} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-medium">{a.applicant?.full_name || "Applicant"}</p>
@@ -209,7 +209,7 @@ function EmployerDashboard() {
                 <span className={cn("text-[12.5px] font-medium", j.status === "open" ? "text-ink" : "text-muted")}>
                   {j.status === "open" ? "Open" : "Closed"}
                 </span>
-                <Link href={`/employer/applicants?job=${j.id}`} className="w-24 text-right text-[13px] text-ink-2 hover:text-brand">
+                <Link href={`/employer/applicants?job=${j.id}`} className="w-24 text-right text-[13px] text-ink-2 hover:text-brand-ink">
                   {j.applicant_count ?? 0} applicant{j.applicant_count === 1 ? "" : "s"}
                 </Link>
               </li>
@@ -269,7 +269,7 @@ function RecentNotifications() {
   const { data, loading } = useApi<Notification[]>("/notifications?limit=5");
   return (
     <Card>
-      <CardHeader title="Activity" action={<Link href="/notifications" className="text-[13px] font-medium text-brand hover:text-brand-hover">See all</Link>} />
+      <CardHeader title="Activity" action={<Link href="/notifications" className="text-[13px] font-medium text-brand-ink hover:underline">See all</Link>} />
       {loading ? (
         <div className="space-y-3 p-5"><Skeleton className="h-8" /><Skeleton className="h-8" /></div>
       ) : !data?.length ? (
@@ -281,7 +281,7 @@ function RecentNotifications() {
         <ul className="divide-y divide-line">
           {data.map((n) => (
             <li key={n.id}>
-              <Link href={n.link || "/notifications"} className="flex gap-3 px-5 py-3 transition-colors hover:bg-canvas">
+              <Link href={n.link || "/notifications"} className="flex gap-3 px-5 py-3 transition-colors hover:bg-subtle">
                 <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", n.is_read ? "bg-transparent" : "bg-brand")} />
                 <div className="min-w-0">
                   <p className={cn("text-[13px] leading-snug", n.is_read ? "text-ink-2" : "font-medium text-ink")}>{n.title}</p>

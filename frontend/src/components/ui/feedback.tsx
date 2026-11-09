@@ -58,10 +58,10 @@ export function Alert({
   className?: string;
 }) {
   const styles = {
-    error: "border-red-200 bg-red-50 text-red-800",
-    success: "border-silver-500 bg-silver-200 text-silver-900",
-    info: "border-line bg-silver-200 text-silver-800",
-    warning: "border-silver-500 bg-silver-400/60 text-silver-900",
+    error: "border-danger/60 bg-brand-soft text-ink [&>svg]:text-danger",
+    success: "border-line-strong bg-subtle text-ink [&>svg]:text-accent",
+    info: "border-line bg-subtle text-ink [&>svg]:text-accent",
+    warning: "border-accent/60 bg-subtle text-ink [&>svg]:text-accent",
   }[tone];
   const Icon = tone === "success" ? CheckCircle2 : tone === "info" ? Info : AlertCircle;
   return (
@@ -91,7 +91,7 @@ export function EmptyState({
   return (
     <div className={cn("flex flex-col items-center justify-center rounded-xl border border-dashed border-line-strong/70 bg-surface px-6 py-12 text-center", className)}>
       {icon && (
-        <div className="mb-4 flex size-11 items-center justify-center rounded-xl border border-line bg-canvas text-muted shadow-xs [&_svg]:size-5">
+        <div className="mb-4 flex size-11 items-center justify-center rounded-xl border border-line bg-subtle text-accent shadow-xs [&_svg]:size-5">
           {icon}
         </div>
       )}

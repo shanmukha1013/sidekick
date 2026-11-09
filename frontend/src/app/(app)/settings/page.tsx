@@ -147,14 +147,14 @@ function RolesSection() {
                   <span className="block text-[14px] font-semibold">{title}</span>
                   <span className="mt-0.5 block text-[13px] text-muted">{body}</span>
                 </span>
-                <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-md border", active ? "border-silver-700 bg-silver-700 text-silver-50" : "border-line-strong")}>
+                <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-md border", active ? "border-brand bg-brand text-paper" : "border-line-strong")}>
                   {active && <Check className="size-3.5" />}
                 </span>
               </button>
             );
           })}
         </div>
-        {!roles.length && <p className="mt-3 text-[13px] text-red-600">Keep at least one option enabled.</p>}
+        {!roles.length && <p className="mt-3 text-[13px] font-medium text-danger">Keep at least one option enabled.</p>}
         <div className="mt-4 flex justify-end">
           <Button onClick={save} loading={saving} disabled={!dirty || !roles.length}>
             Update roles

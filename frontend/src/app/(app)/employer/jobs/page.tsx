@@ -130,7 +130,7 @@ function Listings() {
                   >
                     {busyId !== job.id && <Power />}
                   </Button>
-                  <Button variant="ghost" size="icon-sm" onClick={() => setDeleting(job)} aria-label="Delete listing" title="Delete" className="hover:text-red-600">
+                  <Button variant="ghost" size="icon-sm" onClick={() => setDeleting(job)} aria-label="Delete listing" title="Delete" className="hover:text-danger">
                     <Trash2 />
                   </Button>
                 </div>

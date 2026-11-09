@@ -89,8 +89,8 @@ export default function OnboardingPage() {
         <div className="w-full max-w-xl animate-slide-up">
           <p className="text-[13px] font-medium text-muted">Step {step} of 2</p>
           <div className="mt-2 flex gap-1.5" aria-hidden="true">
-            <span className="h-1 flex-1 rounded-full bg-silver-700" />
-            <span className={cn("h-1 flex-1 rounded-full", step === 2 ? "bg-silver-700" : "bg-line")} />
+            <span className="h-1 flex-1 rounded-full bg-brand" />
+            <span className={cn("h-1 flex-1 rounded-full", step === 2 ? "bg-brand" : "bg-line-strong")} />
           </div>
 
           {step === 1 ? (
@@ -112,19 +112,19 @@ export default function OnboardingPage() {
                       onClick={() => toggle(role)}
                       className={cn(
                         "relative flex flex-col items-start rounded-xl border bg-surface p-5 text-left shadow-xs transition-[border-color,box-shadow]",
-                        active ? "border-ink ring-1 ring-ink" : "border-line hover:border-line-strong",
+                        active ? "border-brand ring-2 ring-brand shadow-lift" : "border-transparent hover:ring-2 hover:ring-brand/50",
                       )}
                     >
                       <span
                         className={cn(
                           "absolute right-4 top-4 flex size-5 items-center justify-center rounded-md border transition-colors",
-                          active ? "border-silver-700 bg-silver-700 text-silver-50" : "border-line-strong bg-surface",
+                          active ? "border-brand bg-brand text-paper" : "border-line-strong bg-transparent",
                         )}
                       >
                         {active && <Check className="size-3.5" />}
                       </span>
-                      <span className="flex size-10 items-center justify-center rounded-lg border border-line bg-canvas">
-                        <Icon className="size-[18px] text-ink-2" />
+                      <span className="flex size-10 items-center justify-center rounded-lg bg-black text-yellow">
+                        <Icon className="size-[18px]" />
                       </span>
                       <span className="mt-4 text-[15px] font-semibold">{title}</span>
                       <span className="mt-1 text-[13.5px] leading-relaxed text-muted">{body}</span>

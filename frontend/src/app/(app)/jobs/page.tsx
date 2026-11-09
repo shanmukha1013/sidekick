@@ -123,7 +123,7 @@ export default function JobsPage() {
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button variant="secondary" size="sm" onClick={() => setShowFilters((s) => !s)} aria-expanded={showFilters} className="lg:hidden">
-          <SlidersHorizontal /> Filters {activeFilters > 0 && <span className="rounded bg-silver-700 px-1.5 text-[11px] text-silver-50">{activeFilters}</span>}
+          <SlidersHorizontal /> Filters {activeFilters > 0 && <span className="rounded bg-brand px-1.5 text-[11px] text-paper">{activeFilters}</span>}
         </Button>
         <div className={cn("w-full flex-wrap gap-2 lg:flex lg:w-auto", showFilters ? "grid grid-cols-2 sm:flex" : "hidden")}>
           <Select aria-label="Category" value={filters.category} onChange={(e) => update({ category: e.target.value })} className="h-9 text-[13px] lg:w-48">
@@ -134,7 +134,7 @@ export default function JobsPage() {
             <option value="">Any type</option>
             {JOB_TYPES.map((c) => <option key={c}>{c}</option>)}
           </Select>
-          <Select aria-label="Work mode" value={filters.work_mode} onChange={(e) => update({ work_mode: e.target.value })} className="h-9 text-[13px] lg:w-36">
+          <Select aria-label="Work mode" value={filters.work_mode} onChange={(e) => update({ work_mode: e.target.value })} className="h-9 text-[13px] lg:w-44">
             <option value="">On-site & remote</option>
             <option value="onsite">On-site</option>
             <option value="remote">Remote</option>
