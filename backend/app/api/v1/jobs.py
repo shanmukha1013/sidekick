@@ -1,260 +1,253 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from typing import List, Any, Optional
-from datetime import datetime
+import re
 import uuid
+from typing import Any, Dict, List, Optional
 
-from app.api import deps
-from app.schemas.job import JobCreate, JobInDB, ApplicationCreate, ApplicationInDB, ApplicationWithDetails, NotificationInDB
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo.errors import DuplicateKeyError
+
+from app.api.deps import get_current_user, get_optional_user, require_employer, require_seeker
+from app.core.security import utcnow
+from app.db.session import get_db
+from app.schemas.common import EXPERIENCE_LEVELS, JOB_CATEGORIES, JOB_TYPES
+from app.schemas.job import ApplicationCreate, ApplicationOut, JobCreate, JobList, JobOut, JobUpdate
+from app.services.notify import notify
+from app.services.serializers import application_out, job_out
 
 router = APIRouter()
 
-# ── JOBS ───────────────────────────────────────────────────────────────────────
 
-@router.post("", response_model=JobInDB, include_in_schema=False)
-@router.post("/", response_model=JobInDB)
-async def create_job(*, db: AsyncIOMotorDatabase = Depends(deps.get_db), job_in: JobCreate, current_user: dict = Depends(deps.get_current_user)) -> Any:
-    job_id = str(uuid.uuid4())
-    job_dict = job_in.model_dump()
-    job_dict["id"] = job_id
-    job_dict["_id"] = job_id
-    job_dict["employer_id"] = current_user["id"]
-    job_dict["created_at"] = datetime.utcnow()
-    
-    await db.jobs.insert_one(job_dict)
-    return job_dict
+def _rx(value: str) -> Dict[str, Any]:
+    return {"$regex": re.escape(value.strip()), "$options": "i"}
 
-@router.get("", response_model=List[JobInDB], include_in_schema=False)
-@router.get("/", response_model=List[JobInDB])
-async def read_jobs(
-    db: AsyncIOMotorDatabase = Depends(deps.get_db),
-    skip: int = 0,
-    limit: int = 50,
-    search: Optional[str] = None,
-    job_type: Optional[str] = None,
-    location_type: Optional[str] = None,
-    min_rate: Optional[float] = None,
-    max_rate: Optional[float] = None,
+
+async def _owned_job(db: AsyncIOMotorDatabase, job_id: str, user: dict) -> dict:
+    job = await db.jobs.find_one({"_id": job_id})
+    if not job:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Job not found.")
+    if job.get("employer_id") != user["id"]:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="You can only manage jobs that you posted.")
+    return job
+
+
+async def _viewer_flags(db: AsyncIOMotorDatabase, user: Optional[dict], job_ids: List[str]) -> tuple[set, set]:
+    if not user or not job_ids:
+        return set(), set()
+    saved = await db.saved_jobs.distinct("job_id", {"user_id": user["id"], "job_id": {"$in": job_ids}})
+    applied = await db.applications.distinct("job_id", {"applicant_id": user["id"], "job_id": {"$in": job_ids}})
+    return set(saved), set(applied)
+
+
+async def _applicant_counts(db: AsyncIOMotorDatabase, job_ids: List[str]) -> Dict[str, int]:
+    pipeline = [
+        {"$match": {"job_id": {"$in": job_ids}, "status": {"$ne": "withdrawn"}}},
+        {"$group": {"_id": "$job_id", "n": {"$sum": 1}}},
+    ]
+    return {row["_id"]: row["n"] async for row in db.applications.aggregate(pipeline)}
+
+
+@router.get("/meta")
+async def job_meta():
+    return {"categories": JOB_CATEGORIES, "job_types": JOB_TYPES, "experience_levels": EXPERIENCE_LEVELS}
+
+
+@router.get("", response_model=JobList)
+async def list_jobs(
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    user: Optional[dict] = Depends(get_optional_user),
+    q: Optional[str] = Query(default=None, max_length=100),
+    category: Optional[str] = None,
+    job_type: Optional[str] = Query(default=None, description="Comma-separated"),
+    location: Optional[str] = Query(default=None, max_length=100),
+    work_mode: Optional[str] = Query(default=None, pattern="^(remote|onsite)$"),
     experience_level: Optional[str] = None,
-    sort: Optional[str] = "newest",
-) -> Any:
-    query = {"status": "open"}
-
-    if search:
+    min_rate: Optional[float] = Query(default=None, ge=0),
+    max_rate: Optional[float] = Query(default=None, ge=0),
+    sort: str = Query(default="newest", pattern="^(newest|pay_high|pay_low)$"),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=50),
+):
+    query: Dict[str, Any] = {"status": "open"}
+    if q and q.strip():
         query["$or"] = [
-            {"title": {"$regex": search, "$options": "i"}},
-            {"description": {"$regex": search, "$options": "i"}},
-            {"location_name": {"$regex": search, "$options": "i"}},
-            {"skills_required": {"$regex": search, "$options": "i"}}
+            {"title": _rx(q)},
+            {"description": _rx(q)},
+            {"skills_required": _rx(q)},
+            {"company_name": _rx(q)},
+            {"category": _rx(q)},
         ]
-        
+    if category:
+        query["category"] = category
     if job_type:
-        types = [t.strip() for t in job_type.split(",")]
-        query["job_type"] = {"$in": types}
-        
-    if location_type == "remote":
+        query["job_type"] = {"$in": [t.strip() for t in job_type.split(",") if t.strip()]}
+    if location and location.strip():
+        query["location_name"] = _rx(location)
+    if work_mode == "remote":
         query["is_remote"] = True
-    elif location_type == "onsite":
-        query["is_remote"] = False
-        
+    elif work_mode == "onsite":
+        query["is_remote"] = {"$ne": True}
+    if experience_level:
+        query["experience_level"] = experience_level
     if min_rate is not None or max_rate is not None:
         query["hourly_rate"] = {}
         if min_rate is not None:
             query["hourly_rate"]["$gte"] = min_rate
         if max_rate is not None:
             query["hourly_rate"]["$lte"] = max_rate
-            
-    if experience_level:
-        query["experience_level"] = experience_level
 
-    cursor = db.jobs.find(query).skip(skip).limit(limit)
-    if sort == "highest_salary":
-        cursor = cursor.sort("hourly_rate", -1)
-    else:
-        cursor = cursor.sort("created_at", -1)
+    sort_spec = {"newest": [("created_at", -1)], "pay_high": [("hourly_rate", -1)], "pay_low": [("hourly_rate", 1)]}[sort]
+    total = await db.jobs.count_documents(query)
+    docs = await db.jobs.find(query).sort(sort_spec).skip(skip).limit(limit).to_list(length=limit)
+    saved, applied = await _viewer_flags(db, user, [d["_id"] for d in docs])
+    items = [
+        job_out(d, is_saved=(d["_id"] in saved) if user else None, has_applied=(d["_id"] in applied) if user else None)
+        for d in docs
+    ]
+    return {"items": items, "total": total}
 
-    jobs = await cursor.to_list(length=limit)
-    return jobs
 
-@router.get("/my", response_model=List[JobInDB])
-async def read_my_jobs(db: AsyncIOMotorDatabase = Depends(deps.get_db), current_user: dict = Depends(deps.get_current_user)) -> Any:
-    jobs = await db.jobs.find({"employer_id": current_user["id"]}).sort("created_at", -1).to_list(length=100)
-    return jobs
+@router.get("/recommended", response_model=List[JobOut])
+async def recommended_jobs(user: dict = Depends(require_seeker), db: AsyncIOMotorDatabase = Depends(get_db)):
+    """Ranks recent open jobs by overlap with the seeker's skills and preferred categories."""
+    profile = await db.profiles.find_one({"user_id": user["id"]}) or {}
+    skills = {s.lower() for s in profile.get("skills") or []}
+    categories = set(profile.get("preferred_categories") or [])
+    applied = set(await db.applications.distinct("job_id", {"applicant_id": user["id"]}))
 
-@router.get("/{job_id}", response_model=JobInDB)
-async def get_job(job_id: str, db: AsyncIOMotorDatabase = Depends(deps.get_db)) -> Any:
+    candidates = await db.jobs.find({"status": "open", "employer_id": {"$ne": user["id"]}}).sort("created_at", -1).limit(200).to_list(200)
+    scored = []
+    for job in candidates:
+        if job["_id"] in applied:
+            continue
+        job_skills = {s.strip().lower() for s in (job.get("skills_required") or "").split(",") if s.strip()}
+        text = f"{job.get('title', '')} {job.get('description', '')}".lower()
+        score = 3 * len(skills & job_skills) + sum(1 for s in skills if s and s in text)
+        if job.get("category") in categories:
+            score += 2
+        scored.append((score, job))
+    scored.sort(key=lambda t: (t[0], t[1]["created_at"]), reverse=True)
+    top = [j for _, j in scored[:6]]
+    saved, _ = await _viewer_flags(db, user, [j["_id"] for j in top])
+    return [job_out(j, is_saved=j["_id"] in saved, has_applied=False) for j in top]
+
+
+@router.get("/mine", response_model=List[JobOut])
+async def my_jobs(user: dict = Depends(require_employer), db: AsyncIOMotorDatabase = Depends(get_db)):
+    docs = await db.jobs.find({"employer_id": user["id"]}).sort("created_at", -1).to_list(500)
+    counts = await _applicant_counts(db, [d["_id"] for d in docs])
+    return [job_out(d, applicant_count=counts.get(d["_id"], 0), is_owner=True) for d in docs]
+
+
+@router.post("", response_model=JobOut, status_code=status.HTTP_201_CREATED)
+async def create_job(job_in: JobCreate, user: dict = Depends(require_employer), db: AsyncIOMotorDatabase = Depends(get_db)):
+    profile = await db.profiles.find_one({"user_id": user["id"]}) or {}
+    now = utcnow()
+    job = job_in.model_dump()
+    job.update(
+        {
+            "_id": str(uuid.uuid4()),
+            "employer_id": user["id"],
+            "company_name": profile.get("company_name") or user.get("full_name"),
+            "status": "open",
+            "created_at": now,
+            "updated_at": now,
+        }
+    )
+    if job["is_remote"] and not job.get("location_name"):
+        job["location_name"] = "Remote"
+    await db.jobs.insert_one(job)
+    return job_out(job, applicant_count=0, is_owner=True)
+
+
+@router.get("/{job_id}", response_model=JobOut)
+async def get_job(job_id: str, user: Optional[dict] = Depends(get_optional_user), db: AsyncIOMotorDatabase = Depends(get_db)):
     job = await db.jobs.find_one({"_id": job_id})
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return job
-
-@router.put("/{job_id}/status")
-async def update_job_status(job_id: str, status: str, db: AsyncIOMotorDatabase = Depends(deps.get_db), current_user: dict = Depends(deps.get_current_user)):
-    res = await db.jobs.update_one(
-        {"_id": job_id, "employer_id": current_user["id"]},
-        {"$set": {"status": status}}
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="This job doesn't exist or has been removed.")
+    # Closed listings stay visible (e.g. for applicants following up) but cannot be applied to.
+    is_owner = bool(user and job.get("employer_id") == user["id"])
+    saved, applied = await _viewer_flags(db, user, [job_id])
+    count = (await _applicant_counts(db, [job_id])).get(job_id, 0) if is_owner else None
+    return job_out(
+        job,
+        is_owner=is_owner if user else None,
+        is_saved=(job_id in saved) if user else None,
+        has_applied=(job_id in applied) if user else None,
+        applicant_count=count,
     )
-    if res.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Job not found or unauthorized")
-    return {"ok": True}
 
-# ── APPLICATIONS ───────────────────────────────────────────────────────────────
 
-@router.post("/{job_id}/apply", response_model=ApplicationInDB)
-async def apply_to_job(job_id: str, app_in: ApplicationCreate, db: AsyncIOMotorDatabase = Depends(deps.get_db), current_user: dict = Depends(deps.get_current_user)) -> Any:
-    job = await db.jobs.find_one({"_id": job_id, "status": "open"})
+@router.put("/{job_id}", response_model=JobOut)
+async def update_job(job_id: str, body: JobUpdate, user: dict = Depends(require_employer), db: AsyncIOMotorDatabase = Depends(get_db)):
+    job = await _owned_job(db, job_id, user)
+    data = body.model_dump(exclude_unset=True)
+    merged = {**job, **data}
+    if not merged.get("is_remote") and not (merged.get("location_name") or "").strip():
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Location is required for on-site jobs.")
+    data["updated_at"] = utcnow()
+    await db.jobs.update_one({"_id": job_id}, {"$set": data})
+    updated = await db.jobs.find_one({"_id": job_id})
+    counts = await _applicant_counts(db, [job_id])
+    return job_out(updated, applicant_count=counts.get(job_id, 0), is_owner=True)
+
+
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(job_id: str, user: dict = Depends(require_employer), db: AsyncIOMotorDatabase = Depends(get_db)):
+    job = await _owned_job(db, job_id, user)
+    apps = await db.applications.find({"job_id": job_id}, {"_id": 1, "applicant_id": 1, "status": 1}).to_list(None)
+    for app in apps:
+        if app.get("status") not in ("rejected", "withdrawn"):
+            await notify(
+                db,
+                app["applicant_id"],
+                "job_removed",
+                f"“{job['title']}” is no longer available",
+                "The employer removed this listing. Your application has been closed.",
+                "/applications",
+            )
+    app_ids = [a["_id"] for a in apps]
+    await db.messages.delete_many({"application_id": {"$in": app_ids}})
+    await db.applications.delete_many({"job_id": job_id})
+    await db.saved_jobs.delete_many({"job_id": job_id})
+    await db.jobs.delete_one({"_id": job_id})
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{job_id}/apply", response_model=ApplicationOut, status_code=status.HTTP_201_CREATED)
+async def apply_to_job(job_id: str, body: ApplicationCreate, user: dict = Depends(require_seeker), db: AsyncIOMotorDatabase = Depends(get_db)):
+    job = await db.jobs.find_one({"_id": job_id})
     if not job:
-        raise HTTPException(status_code=404, detail="Job not found or closed")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="This job doesn't exist or has been removed.")
+    if job.get("status") != "open":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="This job is no longer accepting applications.")
+    if job.get("employer_id") == user["id"]:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="You can't apply to your own job listing.")
+    if await db.applications.find_one({"job_id": job_id, "applicant_id": user["id"]}, {"_id": 1}):
+        raise HTTPException(status.HTTP_409_CONFLICT, detail="You have already applied to this job.")
 
-    existing = await db.applications.find_one({"job_id": job_id, "applicant_id": current_user["id"]})
-    if existing:
-        raise HTTPException(status_code=400, detail="Already applied")
-
-    app_id = str(uuid.uuid4())
-    app_dict = app_in.model_dump()
-    app_dict["id"] = app_id
-    app_dict["_id"] = app_id
-    app_dict["applicant_id"] = current_user["id"]
-    app_dict["status"] = "pending"
-    app_dict["created_at"] = datetime.utcnow()
-    
-    await db.applications.insert_one(app_dict)
-
-    # Notify employer
-    notif = {
-        "id": str(uuid.uuid4()),
+    now = utcnow()
+    app = {
         "_id": str(uuid.uuid4()),
-        "user_id": job["employer_id"],
-        "type": "application_received",
-        "title": f"New application for {job['title']}",
-        "body": "Someone applied to your job posting.",
-        "related_job_id": job_id,
-        "related_application_id": app_id,
-        "is_read": False,
-        "created_at": datetime.utcnow()
+        "job_id": job_id,
+        "applicant_id": user["id"],
+        "employer_id": job["employer_id"],
+        **body.model_dump(),
+        "phone": body.phone or user.get("phone") or user.get("phone_number"),
+        "status": "pending",
+        "created_at": now,
+        "updated_at": now,
     }
-    await db.notifications.insert_one(notif)
-    return app_dict
+    try:
+        await db.applications.insert_one(app)
+    except DuplicateKeyError:
+        raise HTTPException(status.HTTP_409_CONFLICT, detail="You have already applied to this job.")
 
-@router.get("/applications/employer", response_model=List[ApplicationWithDetails])
-async def get_employer_applications(db: AsyncIOMotorDatabase = Depends(deps.get_db), current_user: dict = Depends(deps.get_current_user)) -> Any:
-    my_jobs = await db.jobs.find({"employer_id": current_user["id"]}).to_list(length=None)
-    job_ids = [j["_id"] for j in my_jobs]
-    job_map = {j["_id"]: j for j in my_jobs}
-
-    apps = await db.applications.find({"job_id": {"$in": job_ids}}).sort("created_at", -1).to_list(length=None)
-    
-    result = []
-    for a in apps:
-        profile = await db.profiles.find_one({"user_id": a["applicant_id"]})
-        job = job_map.get(a["job_id"])
-        
-        detail = dict(a)
-        if job:
-            detail["job_title"] = job.get("title")
-            detail["job_location"] = job.get("location_name")
-        if profile:
-            detail["applicant_name"] = profile.get("name", "Unknown")
-            detail["applicant_avatar"] = profile.get("avatar_url")
-            detail["applicant_skills"] = ", ".join(profile.get("skills", [])) if profile.get("skills") else None
-            detail["applicant_bio"] = profile.get("bio")
-            
-        result.append(detail)
-    return result
-
-@router.get("/applications/my", response_model=List[ApplicationWithDetails])
-async def get_my_applications(db: AsyncIOMotorDatabase = Depends(deps.get_db), current_user: dict = Depends(deps.get_current_user)) -> Any:
-    apps = await db.applications.find({"applicant_id": current_user["id"]}).sort("created_at", -1).to_list(length=None)
-    result = []
-    for a in apps:
-        job = await db.jobs.find_one({"_id": a["job_id"]})
-        detail = dict(a)
-        if job:
-            detail["job_title"] = job.get("title")
-            detail["job_location"] = job.get("location_name")
-        result.append(detail)
-    return result
-
-@router.put("/applications/{application_id}")
-async def update_application_status(
-    application_id: str,
-    status: str,
-    db: AsyncIOMotorDatabase = Depends(deps.get_db),
-    current_user: dict = Depends(deps.get_current_user)
-):
-    app = await db.applications.find_one({"_id": application_id})
-    if not app:
-        raise HTTPException(status_code=404, detail="Application not found")
-
-    job = await db.jobs.find_one({"_id": app["job_id"], "employer_id": current_user["id"]})
-    if not job:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    await db.applications.update_one({"_id": application_id}, {"$set": {"status": status}})
-    
-    # Notify applicant
-    title = f"Your application was {status}"
-    body = f"Your application for '{job['title']}' has been {status}."
-    notif = {
-        "id": str(uuid.uuid4()),
-        "_id": str(uuid.uuid4()),
-        "user_id": app["applicant_id"],
-        "type": f"application_{status}",
-        "title": title,
-        "body": body,
-        "related_job_id": job["_id"],
-        "related_application_id": app["_id"],
-        "is_read": False,
-        "created_at": datetime.utcnow()
-    }
-    await db.notifications.insert_one(notif)
-    return {"ok": True, "status": status}
-
-# ── NOTIFICATIONS ───────────────────────────────────────────────────────────────
-
-@router.get("/notifications/me", response_model=List[NotificationInDB])
-async def get_my_notifications(db: AsyncIOMotorDatabase = Depends(deps.get_db), current_user: dict = Depends(deps.get_current_user)) -> Any:
-    notifs = await db.notifications.find({"user_id": current_user["id"]}).sort("created_at", -1).limit(50).to_list(length=50)
-    return notifs
-
-@router.put("/notifications/{notif_id}/read")
-async def mark_notification_read(notif_id: str, db: AsyncIOMotorDatabase = Depends(deps.get_db), current_user: dict = Depends(deps.get_current_user)):
-    await db.notifications.update_one(
-        {"_id": notif_id, "user_id": current_user["id"]},
-        {"$set": {"is_read": True}}
+    await notify(
+        db,
+        job["employer_id"],
+        "application_received",
+        f"New application for “{job['title']}”",
+        f"{user.get('full_name') or user.get('username')} applied.",
+        f"/employer/applicants?job={job_id}",
     )
-    return {"ok": True}
-
-@router.put("/notifications/read-all")
-async def mark_all_read(db: AsyncIOMotorDatabase = Depends(deps.get_db), current_user: dict = Depends(deps.get_current_user)):
-    await db.notifications.update_many(
-        {"user_id": current_user["id"], "is_read": False},
-        {"$set": {"is_read": True}}
-    )
-    return {"ok": True}
-
-# ── SAVED JOBS ─────────────────────────────────────────────────────────────────
-
-@router.post("/{job_id}/save")
-async def save_job(job_id: str, db: AsyncIOMotorDatabase = Depends(deps.get_db), current_user: dict = Depends(deps.get_current_user)):
-    existing = await db.saved_jobs.find_one({"user_id": current_user["id"], "job_id": job_id})
-    if existing:
-        await db.saved_jobs.delete_one({"_id": existing["_id"]})
-        return {"saved": False}
-        
-    saved = {
-        "id": str(uuid.uuid4()),
-        "_id": str(uuid.uuid4()),
-        "user_id": current_user["id"],
-        "job_id": job_id
-    }
-    await db.saved_jobs.insert_one(saved)
-    return {"saved": True}
-
-@router.get("/saved/me", response_model=List[JobInDB])
-async def get_saved_jobs(db: AsyncIOMotorDatabase = Depends(deps.get_db), current_user: dict = Depends(deps.get_current_user)) -> Any:
-    saved = await db.saved_jobs.find({"user_id": current_user["id"]}).to_list(length=None)
-    job_ids = [s["job_id"] for s in saved]
-    
-    jobs = await db.jobs.find({"_id": {"$in": job_ids}}).to_list(length=None)
-    return jobs
+    return application_out(app, job=job_out(job))

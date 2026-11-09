@@ -1,196 +1,131 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi import Request
 import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pymongo.errors import ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
+
+from app.api.v1 import applications, auth, jobs, messages, notifications, profiles, saved, users
 from app.core.config import settings
+from app.db import session
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger("sidekick")
+
+
+async def migrate_legacy_data() -> None:
+    """Idempotent fixes for documents written by earlier versions of the API."""
+    db = session.db
+    async for app in db.applications.find({"employer_id": {"$exists": False}}, {"job_id": 1}):
+        job = await db.jobs.find_one({"_id": app["job_id"]}, {"employer_id": 1})
+        if job:
+            await db.applications.update_one({"_id": app["_id"]}, {"$set": {"employer_id": job["employer_id"]}})
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    if await session.ping():
+        logger.info("Connected to MongoDB database '%s'", settings.DATABASE_NAME)
+        await session.ensure_indexes()
+        await migrate_legacy_data()
+    else:
+        logger.error(
+            "MongoDB is unreachable. Check MONGODB_URL and (for Atlas) that Network Access allows this server's IP. "
+            "API requests that need the database will return 503 until it is reachable."
+        )
+    yield
+    session.client.close()
+
 
 app = FastAPI(
-    title="SideKick API",
-    docs_url=None, # Disable default docs to use our custom UI
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    title=settings.PROJECT_NAME,
+    version="2.0.0",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url="/docs",
+    redoc_url=None,
+    lifespan=lifespan,
 )
-
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
-
-# Set all CORS enabled origins
-origins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    settings.FRONTEND_URL
-]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=list({*settings.frontend_origins, "http://localhost:3000", "http://127.0.0.1:3000"}),
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX or None,
+    # Auth uses a Bearer token header, not cookies, so credentials mode is not required.
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+    max_age=600,
 )
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+
+def _clean_msg(msg: str) -> str:
+    return msg.removeprefix("Value error, ").removeprefix("Assertion failed, ")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_handler(_: Request, exc: RequestValidationError):
+    errors = {}
+    first = None
+    for err in exc.errors():
+        loc = [str(p) for p in err.get("loc", []) if p not in ("body", "query", "path")]
+        field = ".".join(loc) or "_"
+        msg = _clean_msg(err.get("msg", "Invalid value"))
+        if err.get("type") == "missing":
+            msg = "This field is required."
+        elif "email" in field and "email" in msg.lower():
+            msg = "Enter a valid email address."
+        errors.setdefault(field, msg)
+        if first is None:
+            first = msg if field == "_" else f"{field.replace('_', ' ').capitalize()}: {msg}"
+    return JSONResponse(status_code=422, content={"detail": first or "Invalid request.", "errors": errors})
+
+
+@app.exception_handler(ServerSelectionTimeoutError)
+@app.exception_handler(ConnectionFailure)
+async def db_unavailable_handler(_: Request, exc: Exception):
+    logger.error("Database unavailable: %s", exc)
     return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal Server Error. Please check the logs."},
+        status_code=503,
+        content={"detail": "Sidekick can't reach its database right now. Please try again in a moment."},
     )
 
-@app.on_event("startup")
-async def startup_db_check():
-    from app.db import session
-    try:
-        await session.client.admin.command("ping")
-        logger.info("Successfully connected to primary MongoDB")
-    except Exception as e:
-        logger.warning(f"Could not connect to configured MongoDB ({settings.MONGODB_URL}): {e}. Attempting local fallback...")
-        try:
-            from motor.motor_asyncio import AsyncIOMotorClient
-            fallback_client = AsyncIOMotorClient("mongodb://127.0.0.1:27017", serverSelectionTimeoutMS=3000)
-            await fallback_client.admin.command("ping")
-            session.client = fallback_client
-            session.db = fallback_client[settings.DATABASE_NAME]
-            logger.info("Successfully connected to local fallback MongoDB on 127.0.0.1:27017")
-        except Exception as fb_err:
-            logger.error(f"Fallback MongoDB connection failed: {fb_err}")
 
-@app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui_html():
-    html_response = get_swagger_ui_html(
-        openapi_url=app.openapi_url,
-        title=app.title + " - API Reference",
-        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+@app.exception_handler(OperationFailure)
+async def db_operation_handler(_: Request, exc: OperationFailure):
+    logger.error("Database operation failed: %s", exc)
+    if exc.code in (8000, 18, 13):  # Atlas auth / authentication failed / unauthorized
+        return JSONResponse(status_code=503, content={"detail": "Database authentication failed. Check server configuration."})
+    return JSONResponse(status_code=500, content={"detail": "A database error occurred. Please try again."})
+
+
+@app.exception_handler(Exception)
+async def unhandled_handler(_: Request, exc: Exception):
+    logger.error("Unhandled exception: %s", exc, exc_info=True)
+    return JSONResponse(status_code=500, content={"detail": "Something went wrong on our side. Please try again."})
+
+
+api = settings.API_V1_STR
+app.include_router(auth.router, prefix=f"{api}/auth", tags=["auth"])
+app.include_router(users.router, prefix=f"{api}/users", tags=["users"])
+app.include_router(profiles.router, prefix=f"{api}/profiles", tags=["profiles"])
+app.include_router(jobs.router, prefix=f"{api}/jobs", tags=["jobs"])
+app.include_router(applications.router, prefix=f"{api}/applications", tags=["applications"])
+app.include_router(saved.router, prefix=f"{api}/saved-jobs", tags=["saved-jobs"])
+app.include_router(notifications.router, prefix=f"{api}/notifications", tags=["notifications"])
+app.include_router(messages.router, prefix=f"{api}/messages", tags=["messages"])
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return {"service": "sidekick-api", "docs": "/docs", "health": f"{api}/health"}
+
+
+@app.get(f"{api}/health", tags=["health"])
+async def health():
+    db_ok = await session.ping()
+    return JSONResponse(
+        status_code=200 if db_ok else 503,
+        content={"status": "ok" if db_ok else "degraded", "database": "connected" if db_ok else "unreachable"},
     )
-    
-    custom_css = """
-    <style>
-      body {
-        background-color: #F8FAFC !important;
-        color: #0F172A !important;
-        font-family: 'Inter', sans-serif !important;
-      }
-      .swagger-ui .topbar {
-        background-color: #FFFFFF !important;
-        border-bottom: 1px solid #E2E8F0 !important;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.04) !important;
-      }
-      .swagger-ui .topbar .wrapper .link {
-        color: #0F172A !important;
-        font-weight: 800;
-        font-size: 1.25rem;
-      }
-      .swagger-ui .topbar .wrapper .link img {
-        display: none !important;
-      }
-      .swagger-ui .topbar .wrapper .link::before {
-        content: 'Side';
-        color: #0F172A;
-      }
-      .swagger-ui .topbar .wrapper .link::after {
-        content: 'Kick';
-        color: #FACC15;
-      }
-      .swagger-ui .info .title {
-        color: #0F172A !important;
-      }
-      .swagger-ui .opblock-tag {
-        color: #0F172A !important;
-        border-bottom: 1px solid #E2E8F0 !important;
-      }
-      .swagger-ui .opblock {
-        background-color: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 16px !important;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.04) !important;
-        margin-bottom: 20px !important;
-      }
-      .swagger-ui .opblock .opblock-summary {
-        border-bottom: 1px solid transparent !important;
-      }
-      .swagger-ui .opblock.is-open .opblock-summary {
-        border-bottom: 1px solid #E2E8F0 !important;
-      }
-      .swagger-ui .opblock .opblock-summary-method {
-        background: #FACC15 !important;
-        color: #0F172A !important;
-        border-radius: 8px !important;
-      }
-      .swagger-ui .opblock .opblock-summary-path {
-        color: #0F172A !important;
-      }
-      .swagger-ui .opblock .opblock-summary-description {
-        color: #64748B !important;
-      }
-      .swagger-ui .btn {
-        background-color: #FACC15 !important;
-        color: #0F172A !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: bold !important;
-        box-shadow: 0 4px 10px rgba(250, 204, 21, 0.2) !important;
-      }
-      .swagger-ui .btn:hover {
-        opacity: 0.9 !important;
-      }
-      .swagger-ui section.models {
-        background-color: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 16px !important;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.04) !important;
-      }
-      .swagger-ui section.models h4 {
-        color: #0F172A !important;
-        border-bottom: 1px solid #E2E8F0 !important;
-      }
-      .swagger-ui .model, .swagger-ui .model-title {
-        color: #0F172A !important;
-      }
-      .swagger-ui table thead tr th {
-        color: #0F172A !important;
-        border-bottom: 1px solid #E2E8F0 !important;
-      }
-      .swagger-ui .parameter__name {
-        color: #0F172A !important;
-      }
-      .swagger-ui .parameter__type, .swagger-ui .parameter__in {
-        color: #64748B !important;
-      }
-      .swagger-ui .response-col_status {
-        color: #0F172A !important;
-      }
-      .swagger-ui .response-col_description {
-        color: #64748B !important;
-      }
-      .swagger-ui .opblock-body pre.microlight {
-        background-color: #F8FAFC !important;
-        border-radius: 8px !important;
-        border: 1px solid #E2E8F0 !important;
-        color: #0F172A !important;
-      }
-      .swagger-ui .markdown p, .swagger-ui .markdown li {
-        color: #64748B !important;
-      }
-    </style>
-    """
-    
-    response_content = html_response.body.decode("utf-8")
-    response_content = response_content.replace("</head>", f"{custom_css}</head>")
-    return HTMLResponse(response_content)
-
-from app.api.v1 import auth, profiles, jobs
-
-app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
-app.include_router(profiles.router, prefix=f"{settings.API_V1_STR}/profiles", tags=["profiles"])
-app.include_router(jobs.router, prefix=f"{settings.API_V1_STR}/jobs", tags=["jobs"])
-
-@app.get("/")
-def read_root():
-    logger.info("Health check endpoint accessed")
-    return {"message": "Welcome to Sidekick API"}

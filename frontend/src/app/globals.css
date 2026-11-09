@@ -1,164 +1,117 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* ── Sidekick design tokens ─────────────────────────────────────────────── */
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
+  /* Surfaces */
+  --color-canvas: #fafafa;
+  --color-surface: #ffffff;
+  --color-subtle: #f4f4f5;
+  --color-line: #e7e7ea;
+  --color-line-strong: #d4d4d8;
 
-:root {
-  /* Page/surface background - Charcoal */
-  --background: #1E2229;
-  --foreground: #F3F4F6;
+  /* Text */
+  --color-ink: #0b0b0f;
+  --color-ink-2: #3f3f46;
+  --color-muted: #71717a;
+  --color-faint: #a1a1aa;
 
-  /* Foreground surfaces/cards - Darker Charcoal (no white) */
-  --card: #2A303C;
-  --card-foreground: #F3F4F6;
+  /* Brand — Sidekick cobalt */
+  --color-brand: #2f5bea;
+  --color-brand-hover: #2549cf;
+  --color-brand-soft: #eef2fe;
+  --color-brand-ink: #1e3a9e;
 
-  --popover: #2A303C;
-  --popover-foreground: #F3F4F6;
+  --shadow-xs: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+  --shadow-card: 0 1px 2px 0 rgb(16 24 40 / 0.04), 0 1px 3px 0 rgb(16 24 40 / 0.03);
+  --shadow-pop: 0 16px 40px -12px rgb(16 24 40 / 0.22), 0 4px 10px -4px rgb(16 24 40 / 0.08);
 
-  --primary: #FACC15;
-  --primary-foreground: #1E2229;
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-slide-up: slide-up 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-slide-in-left: slide-in-left 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  --secondary: #374151;
-  --secondary-foreground: #F3F4F6;
-
-  --muted: #374151;
-  --muted-foreground: #9CA3AF;
-
-  --accent: #FACC15;
-  --accent-foreground: #1E2229;
-
-  --destructive: #EF4444;
-  --destructive-foreground: #F3F4F6;
-
-  --border: #374151;
-  --input: #374151;
-  --ring: #FACC15;
-
-  --radius: 16px;
-
-  --sidebar: #1E2229;
-  --sidebar-foreground: #F3F4F6;
-  --sidebar-primary: #FACC15;
-  --sidebar-primary-foreground: #1E2229;
-  --sidebar-accent: #2A303C;
-  --sidebar-accent-foreground: #F3F4F6;
-  --sidebar-border: #374151;
-  --sidebar-ring: #FACC15;
-}
-
-.dark {
-  /* Enforce Dark Theme colors (Charcoal page background) */
-  --background: #1E2229;
-  --foreground: #F3F4F6;
-
-  /* Foreground surfaces/cards - Darker Charcoal (no white) */
-  --card: #2A303C;
-  --card-foreground: #F3F4F6;
-
-  --popover: #2A303C;
-  --popover-foreground: #F3F4F6;
-
-  --primary: #FACC15;
-  --primary-foreground: #1E2229;
-
-  --secondary: #374151;
-  --secondary-foreground: #F3F4F6;
-
-  --muted: #374151;
-  --muted-foreground: #9CA3AF;
-
-  --accent: #FACC15;
-  --accent-foreground: #1E2229;
-
-  --destructive: #EF4444;
-  --destructive-foreground: #F3F4F6;
-
-  --border: #374151;
-  --input: #374151;
-  --ring: #FACC15;
-
-  --radius: 16px;
-
-  --sidebar: #1E2229;
-  --sidebar-foreground: #F3F4F6;
-  --sidebar-primary: #FACC15;
-  --sidebar-primary-foreground: #1E2229;
-  --sidebar-accent: #2A303C;
-  --sidebar-accent-foreground: #F3F4F6;
-  --sidebar-border: #374151;
-  --sidebar-ring: #FACC15;
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-in-left {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  html,
-  body,
-  #__next,
-  main,
-  .app,
-  .layout,
-  .page {
-    background: var(--background) !important;
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-canvas text-ink font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
   }
-  
-  /* Soft shadows for standard elevated cards */
-  .shadow-soft {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-line);
   }
+  ::selection {
+    background: color-mix(in srgb, var(--color-brand) 18%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+  }
+  dialog::backdrop {
+    background: rgb(9 9 11 / 0.45);
+    backdrop-filter: blur(2px);
+  }
+}
 
-  /* React-Leaflet Overrides */
-  .leaflet-container { z-index: 0 !important; font-family: inherit; }
-  .leaflet-popup-content-wrapper { background: var(--card); color: var(--foreground); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-  .leaflet-popup-tip { background: var(--card); border: 1px solid var(--border); }
-  .leaflet-popup-close-button { color: var(--foreground) !important; }
+@utility container-page {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  @media (width >= 640px) {
+    padding-inline: 1.5rem;
+  }
+}
+
+@utility bg-grid {
+  background-image: linear-gradient(to right, rgb(16 24 40 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(16 24 40 / 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ── Leaflet ─────────────────────────────────────────────────────────────── */
+.leaflet-container {
+  z-index: 0 !important;
+  font-family: inherit;
+  background: var(--color-subtle);
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-pop);
+}
+.leaflet-popup-content {
+  margin: 12px 14px;
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+.job-map-marker {
+  background: none;
+  border: none;
 }

@@ -1,79 +1,82 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from motor.motor_asyncio import AsyncIOMotorDatabase
-import cloudinary
-import cloudinary.uploader
-from app.api.deps import get_db, get_current_user
-from app.schemas.profile import WorkerProfileUpdate, WorkerProfileResponse
-from app.core.config import settings
+import uuid
 
-# Configure cloudinary if URL is available
-if settings.CLOUDINARY_URL:
-    cloudinary.config(url=settings.CLOUDINARY_URL)
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
+from app.api.deps import get_current_user
+from app.core.config import settings
+from app.core.security import utcnow
+from app.db.session import get_db
+from app.schemas.profile import ProfileOut, ProfileUpdate
+from app.services.serializers import profile_out
 
 router = APIRouter()
 
-@router.get("/me", response_model=WorkerProfileResponse)
-async def get_my_profile(current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
-    profile = await db.profiles.find_one({"user_id": current_user["id"]})
-    if not profile:
-        profile = {
-            "user_id": current_user["id"],
-            "name": "New User",
-            "trust_score": 0.0
-        }
-        res = await db.profiles.insert_one(profile)
-        profile["_id"] = res.inserted_id
-    
-    return profile
+MAX_AVATAR_BYTES = 5 * 1024 * 1024
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
-@router.put("/me", response_model=WorkerProfileResponse)
-async def update_my_profile(profile_in: WorkerProfileUpdate, current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
-    profile = await db.profiles.find_one({"user_id": current_user["id"]})
-    if not profile:
-        profile = {
-            "user_id": current_user["id"],
-            "name": profile_in.name or "New User",
-            "trust_score": 0.0
-        }
-        await db.profiles.insert_one(profile)
-    
-    update_data = profile_in.model_dump(exclude_unset=True)
-    if update_data:
-        await db.profiles.update_one(
-            {"user_id": current_user["id"]},
-            {"$set": update_data}
-        )
-        profile.update(update_data)
-        
-    return profile
 
-@router.post("/me/avatar", response_model=WorkerProfileResponse)
-async def upload_avatar(file: UploadFile = File(...), current_user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+@router.get("/me", response_model=ProfileOut)
+async def get_my_profile(user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    profile = await db.profiles.find_one({"user_id": user["id"]})
+    return profile_out(user, profile)
+
+
+@router.put("/me", response_model=ProfileOut)
+async def update_my_profile(body: ProfileUpdate, user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    data = body.model_dump(exclude_unset=True)
+    if "employer" in user["roles"] and "company_name" in data and not (data["company_name"] or "").strip():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Company name is required while hiring is enabled.")
+    now = utcnow()
+    data["updated_at"] = now
+    await db.profiles.update_one(
+        {"user_id": user["id"]},
+        {"$set": data, "$setOnInsert": {"_id": str(uuid.uuid4()), "user_id": user["id"], "created_at": now}},
+        upsert=True,
+    )
+    if data.get("company_name"):
+        # Keep the company name shown on this employer's listings in sync.
+        await db.jobs.update_many({"employer_id": user["id"]}, {"$set": {"company_name": data["company_name"]}})
+    return profile_out(user, await db.profiles.find_one({"user_id": user["id"]}))
+
+
+@router.post("/me/avatar", response_model=ProfileOut)
+async def upload_avatar(file: UploadFile = File(...), user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
     if not settings.CLOUDINARY_URL:
-        raise HTTPException(status_code=500, detail="Cloudinary configuration missing")
-    
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Photo uploads are not available yet: image storage (CLOUDINARY_URL) is not configured on the server.",
+        )
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Upload a JPEG, PNG or WebP image.")
+    content = await file.read()
+    if len(content) > MAX_AVATAR_BYTES:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Image must be 5 MB or smaller.")
+
+    import cloudinary
+    import cloudinary.uploader
+
+    cloudinary.config(cloudinary_url=settings.CLOUDINARY_URL)
     try:
-        result = cloudinary.uploader.upload(file.file, folder="sidekick/avatars")
-        avatar_url = result.get("secure_url")
-        
-        # Ensure profile exists before updating
-        profile = await db.profiles.find_one({"user_id": current_user["id"]})
-        if not profile:
-            profile = {
-                "user_id": current_user["id"],
-                "name": "New User",
-                "trust_score": 0.0,
-                "avatar_url": avatar_url
-            }
-            res = await db.profiles.insert_one(profile)
-            profile["_id"] = res.inserted_id
-        else:
-            await db.profiles.update_one(
-                {"user_id": current_user["id"]},
-                {"$set": {"avatar_url": avatar_url}}
-            )
-            profile["avatar_url"] = avatar_url
-            
-        return profile
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
+        result = cloudinary.uploader.upload(
+            content, folder="sidekick/avatars", public_id=user["id"], overwrite=True,
+            transformation=[{"width": 400, "height": 400, "crop": "fill", "gravity": "face"}],
+        )
+    except Exception as exc:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail=f"Image upload failed: {exc}")
+    now = utcnow()
+    await db.profiles.update_one(
+        {"user_id": user["id"]},
+        {"$set": {"avatar_url": result.get("secure_url"), "updated_at": now},
+         "$setOnInsert": {"_id": str(uuid.uuid4()), "user_id": user["id"], "created_at": now}},
+        upsert=True,
+    )
+    return profile_out(user, await db.profiles.find_one({"user_id": user["id"]}))
+
+
+@router.get("/{user_id}", response_model=ProfileOut)
+async def get_public_profile(user_id: str, _: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
+    user = await db.users.find_one({"_id": user_id}, {"password_hash": 0})
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Profile not found.")
+    return profile_out(user, await db.profiles.find_one({"user_id": user_id}))

@@ -1,15 +1,11 @@
+# Local MongoDB for development: docker compose up -d
 services:
-  db:
-    image: mongo:latest
+  mongo:
+    image: mongo:7
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
 
 volumes:
   mongo_data:

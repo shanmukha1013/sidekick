@@ -1,128 +1,60 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import { MapPin, ExternalLink } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
+import L from "leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import type { Job } from "@/lib/types";
+import { formatRate } from "@/lib/format";
 
-const createGoldIcon = () => {
-  const svgIcon = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FACC15" stroke="#0F172A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-      <circle cx="12" cy="10" r="3" fill="#0F172A"></circle>
-    </svg>
-  `;
-  return L.divIcon({
-    html: svgIcon,
-    className: "job-map-marker",
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
-  });
-};
+const markerIcon = L.divIcon({
+  html: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="34" viewBox="0 0 28 34"><path d="M14 33s11-9.6 11-19A11 11 0 0 0 3 14c0 9.4 11 19 11 19z" fill="#0B0B0F" stroke="#fff" stroke-width="2"/><circle cx="14" cy="14" r="4" fill="#2F5BEA"/></svg>`,
+  className: "job-map-marker",
+  iconSize: [28, 34],
+  iconAnchor: [14, 33],
+  popupAnchor: [0, -30],
+});
 
-function MapViewUpdater({ validJobs }: { validJobs: any[] }) {
+function FitBounds({ points }: { points: [number, number][] }) {
   const map = useMap();
-
   useEffect(() => {
-    // Invalidate size in case container dimensions updated
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 250);
-
-    if (validJobs.length === 1) {
-      map.setView([validJobs[0].lat, validJobs[0].lng], 13);
-    } else if (validJobs.length > 1) {
-      const bounds = L.latLngBounds(validJobs.map((j) => [j.lat, j.lng]));
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-    }
-
-    return () => clearTimeout(timer);
-  }, [map, validJobs]);
-
+    const t = setTimeout(() => map.invalidateSize(), 200);
+    if (points.length === 1) map.setView(points[0], 13);
+    else if (points.length > 1) map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 13 });
+    return () => clearTimeout(t);
+  }, [map, points]);
   return null;
 }
 
-export default function JobMap({ jobs }: { jobs?: any[] }) {
-  const [icon, setIcon] = useState<any>(null);
-
-  useEffect(() => {
-    setIcon(createGoldIcon());
-  }, []);
-
-  const validJobs = useMemo(() => {
-    return (jobs || []).filter(
-      (job) =>
-        job &&
-        typeof job.lat === "number" &&
-        typeof job.lng === "number" &&
-        !isNaN(job.lat) &&
-        !isNaN(job.lng)
-    );
-  }, [jobs]);
-
-  // OpenStreetMap is 100% free, requires NO API key, and has NO watermarks.
-  // If a custom tile URL or Carto API key is configured, use it.
-  const apiKey = process.env.NEXT_PUBLIC_MAPS_API_KEY;
-  const customTileUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL;
-
-  let tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-  let tileAttribution =
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-
-  if (customTileUrl) {
-    tileUrl = customTileUrl;
-    tileAttribution = "Map Data";
-  } else if (apiKey) {
-    tileUrl = `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=${apiKey}`;
-    tileAttribution = '&copy; <a href="https://carto.com/attributions">CARTO</a>';
-  }
-
-  const defaultCenter: [number, number] =
-    validJobs.length > 0
-      ? [validJobs[0].lat, validJobs[0].lng]
-      : [20.5937, 78.9629]; // India center
-
-  const defaultZoom = validJobs.length === 1 ? 13 : validJobs.length > 1 ? 10 : 5;
-
-  if (!icon) return <div className="w-full h-full bg-muted animate-pulse rounded-xl" />;
+export default function JobMap({ jobs }: { jobs: Job[] }) {
+  const located = useMemo(
+    () => jobs.filter((j) => typeof j.lat === "number" && typeof j.lng === "number" && !Number.isNaN(j.lat) && !Number.isNaN(j.lng)),
+    [jobs],
+  );
+  const points = useMemo(() => located.map((j) => [j.lat as number, j.lng as number] as [number, number]), [located]);
+  const tileUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL || "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
   return (
-    <div className="w-full h-full min-h-[350px] rounded-xl overflow-hidden border border-border shadow-sm relative z-0">
-      <MapContainer
-        center={defaultCenter}
-        zoom={defaultZoom}
-        minZoom={3}
-        scrollWheelZoom={true}
-        style={{ height: "100%", width: "100%" }}
-      >
-        <TileLayer url={tileUrl} attribution={tileAttribution} />
-        <MapViewUpdater validJobs={validJobs} />
-
-        {validJobs.map((job) => (
-          <Marker key={job.id} position={[job.lat, job.lng]} icon={icon}>
-            <Popup>
-              <div className="p-1 min-w-[200px] text-foreground">
-                <h3 className="font-bold text-sm mb-1">{job.title}</h3>
-                <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
-                  <MapPin className="w-3 h-3 text-primary shrink-0" /> {job.location_name || "Location"}
-                </p>
-                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border">
-                  <span className="font-black text-sm text-primary">₹{job.hourly_rate}/hr</span>
-                  <Link
-                    href={`/job/${job.id}`}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary text-primary-foreground font-bold text-xs rounded hover:opacity-90 transition-opacity"
-                  >
-                    View <ExternalLink className="w-3 h-3" />
-                  </Link>
-                </div>
+    <MapContainer center={points[0] || [20.5937, 78.9629]} zoom={points.length ? 11 : 4} minZoom={3} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+      <TileLayer url={tileUrl} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
+      <FitBounds points={points} />
+      {located.map((job) => (
+        <Marker key={job.id} position={[job.lat as number, job.lng as number]} icon={markerIcon}>
+          <Popup>
+            <div className="min-w-[180px] font-sans">
+              <p className="text-[13.5px] font-semibold text-ink">{job.title}</p>
+              <p className="mt-0.5 text-[12px] text-muted">{job.company_name}</p>
+              <div className="mt-2 flex items-center justify-between gap-3 border-t border-line pt-2">
+                <span className="text-[12.5px] font-semibold text-ink">{formatRate(job.hourly_rate)}</span>
+                <Link href={`/jobs/${job.id}`} className="text-[12.5px] font-medium !text-brand">
+                  View job
+                </Link>
               </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-    </div>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
+    </MapContainer>
   );
 }

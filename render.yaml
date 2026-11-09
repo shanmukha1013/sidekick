@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: sidekick-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: production
+      # MongoDB Atlas SRV connection string, e.g. mongodb+srv://USER:PASS@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+      # Atlas → Network Access must allow 0.0.0.0/0 (Render has no static outbound IPs on the free plan).
+      - key: MONGODB_URL
+        sync: false
+      - key: DATABASE_NAME
+        value: sidekick
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      # Comma-separated exact frontend origins, e.g. https://sidekick-sand-eight.vercel.app
+      - key: FRONTEND_URL
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
