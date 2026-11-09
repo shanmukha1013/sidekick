@@ -63,12 +63,22 @@ export default function JobMap({ jobs }: { jobs?: any[] }) {
     );
   }, [jobs]);
 
-  // Support custom tile URL from env (e.g. Mapbox, Stadia, Google Tiles) or fallback to Carto Voyager
-  const tileUrl =
-    process.env.NEXT_PUBLIC_MAP_TILE_URL ||
-    "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-  const tileAttribution =
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  // OpenStreetMap is 100% free, requires NO API key, and has NO watermarks.
+  // If a custom tile URL or Carto API key is configured, use it.
+  const apiKey = process.env.NEXT_PUBLIC_MAPS_API_KEY;
+  const customTileUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL;
+
+  let tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+  let tileAttribution =
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+  if (customTileUrl) {
+    tileUrl = customTileUrl;
+    tileAttribution = "Map Data";
+  } else if (apiKey) {
+    tileUrl = `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=${apiKey}`;
+    tileAttribution = '&copy; <a href="https://carto.com/attributions">CARTO</a>';
+  }
 
   const defaultCenter: [number, number] =
     validJobs.length > 0

@@ -11,6 +11,7 @@ router = APIRouter()
 
 # ── JOBS ───────────────────────────────────────────────────────────────────────
 
+@router.post("", response_model=JobInDB, include_in_schema=False)
 @router.post("/", response_model=JobInDB)
 async def create_job(*, db: AsyncIOMotorDatabase = Depends(deps.get_db), job_in: JobCreate, current_user: dict = Depends(deps.get_current_user)) -> Any:
     job_id = str(uuid.uuid4())
@@ -23,6 +24,7 @@ async def create_job(*, db: AsyncIOMotorDatabase = Depends(deps.get_db), job_in:
     await db.jobs.insert_one(job_dict)
     return job_dict
 
+@router.get("", response_model=List[JobInDB], include_in_schema=False)
 @router.get("/", response_model=List[JobInDB])
 async def read_jobs(
     db: AsyncIOMotorDatabase = Depends(deps.get_db),
