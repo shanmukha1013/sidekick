@@ -193,7 +193,7 @@ function Conversation({ applicationId, thread, onBack, onActivity }: { applicati
                     <p
                       className={cn(
                         "whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[14px] leading-relaxed",
-                        mine ? "rounded-br-md bg-silver-700 text-silver-50" : "rounded-bl-md border border-line bg-surface text-ink",
+                        mine ? "rounded-br-md bg-brand text-on-brand" : "rounded-bl-md border border-line bg-raised text-ink",
                       )}
                     >
                       {m.body}
@@ -222,7 +222,7 @@ function Conversation({ applicationId, thread, onBack, onActivity }: { applicati
           }}
           maxLength={4000}
           placeholder="Write a message…"
-          className="max-h-40 min-h-10 flex-1 resize-none rounded-lg border border-line bg-surface px-3 py-2 text-[14px] shadow-xs placeholder:text-faint focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/12"
+          className="max-h-40 min-h-10 flex-1 resize-none rounded-lg border border-line bg-surface px-3 py-2 text-[14px] shadow-xs placeholder:text-faint focus:border-accent/70 focus:outline-none focus:ring-4 focus:ring-accent/15"
         />
         <Button type="submit" size="icon" loading={sending} disabled={!draft.trim()} aria-label="Send message" className="h-10 w-10">
           {!sending && <Send />}

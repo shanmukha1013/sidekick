@@ -3,8 +3,9 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Map as MapIcon, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
+import { List, Map as MapIcon, MapPin, ScanSearch, Search, SlidersHorizontal, X } from "lucide-react";
 import { JobCard } from "@/components/jobs/JobCard";
+import { type BBox, hasCoords } from "@/lib/geo";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/display";
 import { EmptyState, ErrorState, SkeletonRows } from "@/components/ui/feedback";
@@ -12,12 +13,17 @@ import { Input, Select } from "@/components/ui/form";
 import { useToast } from "@/components/ui/overlay";
 import { api, ApiError, errorMessage, qs } from "@/lib/api";
 import { toApiError } from "@/lib/hooks";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { EXPERIENCE_LEVELS, JOB_CATEGORIES, JOB_TYPES, type Job, type JobList } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const JobMap = dynamic(() => import("@/components/JobMap"), {
   ssr: false,
-  loading: () => <div className="h-full w-full animate-pulse bg-subtle" />,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-subtle text-[12.5px] text-muted">
+      <span className="animate-pulse">Loading map…</span>
+    </div>
+  ),
 });
 
 const PAGE = 20;
@@ -37,6 +43,7 @@ export default function JobsPage() {
       job_type: params.get("job_type") || "",
       work_mode: params.get("work_mode") || "",
       experience_level: params.get("experience_level") || "",
+      bbox: params.get("bbox") || "",
       sort: params.get("sort") || "newest",
     }),
     [params],
@@ -54,6 +61,11 @@ export default function JobsPage() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [showMap, setShowMap] = useState(true);
+  const [mobileView, setMobileView] = useState<"list" | "map">("list");
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [focus, setFocus] = useState<{ id: string; n: number } | null>(null);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const requestKey = `${reloadKey}|${qs(filters)}`;
   const [result, setResult] = useState<{ key: string; items: Job[]; total: number; error: ApiError | null } | null>(null);
@@ -92,15 +104,44 @@ export default function JobsPage() {
     }
   };
 
+  // A marker click highlights the matching card and brings it into view.
+  const selectFromMap = (id: string) => {
+    setSelectedId(id);
+    if (mobileView === "list") document.getElementById(`job-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
+  const locate = (id: string) => {
+    setSelectedId(id);
+    setFocus((f) => ({ id, n: (f?.n ?? 0) + 1 }));
+    setMobileView("map");
+  };
+  const searchArea = (bbox: BBox) => update({ bbox: bbox.join(",") });
+
   const activeFilters = FILTER_KEYS.filter((k) => k !== "sort" && filters[k]).length;
-  const hasLocated = items.some((j) => typeof j.lat === "number" && typeof j.lng === "number");
-  const mapVisible = showMap && hasLocated;
+  const anySearch = !!(filters.q || filters.location || filters.bbox || activeFilters);
+  const locatedCount = items.filter(hasCoords).length;
+
+  const map = (
+    <JobMap
+      jobs={items}
+      total={total}
+      hoveredId={hoveredId ?? selectedId}
+      focusId={focus?.id}
+      focusNonce={focus?.n}
+      onSelect={selectFromMap}
+      onSearchArea={searchArea}
+      areaActive={!!filters.bbox}
+    />
+  );
 
   return (
     <div>
       <PageHeader
-        title="Find jobs"
-        description={loading ? "Searching…" : `${total.toLocaleString("en-IN")} open ${total === 1 ? "role" : "roles"}`}
+        title="Find Jobs"
+        description={
+          loading
+            ? "Searching…"
+            : `${total.toLocaleString("en-IN")} open ${total === 1 ? "role" : "roles"}${filters.bbox ? " in the selected map area" : ""}`
+        }
       />
 
       <form
@@ -112,10 +153,10 @@ export default function JobsPage() {
         className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-2 shadow-card sm:flex-row"
       >
         <label className="sr-only" htmlFor="jobs-q">Keywords</label>
-        <Input id="jobs-q" leading={<Search />} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Job title, skill or company" containerClassName="sm:flex-1" className="border-transparent shadow-none" />
+        <Input id="jobs-q" leading={<Search />} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Job title, skill or company" containerClassName="sm:flex-1" className="border-transparent bg-transparent shadow-none" />
         <div className="hidden w-px bg-line sm:block" />
         <label className="sr-only" htmlFor="jobs-location">Location</label>
-        <Input id="jobs-location" leading={<MapPin />} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="City or area" containerClassName="sm:w-56" className="border-transparent shadow-none" />
+        <Input id="jobs-location" leading={<MapPin />} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="City or area" containerClassName="sm:w-56" className="border-transparent bg-transparent shadow-none" />
         <Button type="submit" className="h-10 sm:px-5">
           Search
         </Button>
@@ -123,7 +164,7 @@ export default function JobsPage() {
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button variant="secondary" size="sm" onClick={() => setShowFilters((s) => !s)} aria-expanded={showFilters} className="lg:hidden">
-          <SlidersHorizontal /> Filters {activeFilters > 0 && <span className="rounded bg-silver-700 px-1.5 text-[11px] text-silver-50">{activeFilters}</span>}
+          <SlidersHorizontal /> Filters {activeFilters > 0 && <span className="rounded bg-brand px-1.5 text-[11px] text-on-brand">{activeFilters}</span>}
         </Button>
         <div className={cn("w-full flex-wrap gap-2 lg:flex lg:w-auto", showFilters ? "grid grid-cols-2 sm:flex" : "hidden")}>
           <Select aria-label="Category" value={filters.category} onChange={(e) => update({ category: e.target.value })} className="h-9 text-[13px] lg:w-48">
@@ -134,7 +175,7 @@ export default function JobsPage() {
             <option value="">Any type</option>
             {JOB_TYPES.map((c) => <option key={c}>{c}</option>)}
           </Select>
-          <Select aria-label="Work mode" value={filters.work_mode} onChange={(e) => update({ work_mode: e.target.value })} className="h-9 text-[13px] lg:w-36">
+          <Select aria-label="Work mode" value={filters.work_mode} onChange={(e) => update({ work_mode: e.target.value })} className="h-9 text-[13px] lg:w-44">
             <option value="">On-site & remote</option>
             <option value="onsite">On-site</option>
             <option value="remote">Remote</option>
@@ -149,12 +190,39 @@ export default function JobsPage() {
             </Button>
           )}
         </div>
+        {filters.bbox && (
+          <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-accent/40 bg-accent-soft pl-3 pr-1 text-[12.5px] font-medium text-accent-ink">
+            <ScanSearch className="size-3.5" /> Map area
+            <button
+              type="button"
+              onClick={() => update({ bbox: "" })}
+              className="flex size-6 items-center justify-center rounded-full hover:bg-accent/20"
+              aria-label="Remove map area filter"
+            >
+              <X className="size-3.5" />
+            </button>
+          </span>
+        )}
         <div className="ml-auto flex items-center gap-2">
-          {hasLocated && (
-            <Button variant="ghost" size="sm" onClick={() => setShowMap((s) => !s)} className="hidden lg:inline-flex" aria-pressed={showMap}>
-              <MapIcon /> {showMap ? "Hide map" : "Show map"}
-            </Button>
-          )}
+          <div className="inline-flex rounded-lg border border-line bg-surface p-0.5 lg:hidden" role="group" aria-label="View">
+            {(["list", "map"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setMobileView(v)}
+                aria-pressed={mobileView === v}
+                className={cn(
+                  "inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium transition-colors",
+                  mobileView === v ? "bg-brand text-on-brand" : "text-ink-2 hover:text-ink",
+                )}
+              >
+                {v === "list" ? <List className="size-3.5" /> : <MapIcon className="size-3.5" />} {v === "list" ? "List" : "Map"}
+              </button>
+            ))}
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setShowMap((s) => !s)} className="hidden lg:inline-flex" aria-pressed={showMap}>
+            <MapIcon /> {showMap ? "Hide map" : "Show map"}
+          </Button>
           <Select aria-label="Sort by" value={filters.sort} onChange={(e) => update({ sort: e.target.value })} className="h-9 w-40 text-[13px]">
             <option value="newest">Newest first</option>
             <option value="pay_high">Highest pay</option>
@@ -163,7 +231,12 @@ export default function JobsPage() {
         </div>
       </div>
 
-      <div className={cn("mt-5 grid gap-5", mapVisible && "lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]")}>
+      {/* Mobile: full-width interactive map */}
+      {!isDesktop && mobileView === "map" && (
+        <div className="mt-4 h-[68dvh] min-h-[360px] overflow-hidden rounded-xl border border-line shadow-card lg:hidden">{map}</div>
+      )}
+
+      <div className={cn("mt-5 grid gap-5", showMap && "lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]", mobileView === "map" && "max-lg:hidden")}>
         <div className="min-w-0">
           {loading ? (
             <SkeletonRows count={5} />
@@ -172,14 +245,16 @@ export default function JobsPage() {
           ) : items.length === 0 ? (
             <EmptyState
               icon={<Search />}
-              title={filters.q || activeFilters || filters.location ? "No jobs match your search" : "No open jobs yet"}
+              title={anySearch ? "No jobs match your search" : "No open jobs yet"}
               description={
-                filters.q || activeFilters || filters.location
-                  ? "Try different keywords, a nearby location, or fewer filters."
-                  : "New roles appear here as soon as employers publish them."
+                filters.bbox
+                  ? "No pinned jobs in this part of the map. Zoom out or move the map and search again."
+                  : anySearch
+                    ? "Try different keywords, a nearby location, or fewer filters."
+                    : "New roles appear here as soon as they're published."
               }
               action={
-                (filters.q || activeFilters > 0 || filters.location) && (
+                anySearch && (
                   <Button variant="secondary" onClick={() => router.replace(pathname)}>
                     Clear search
                   </Button>
@@ -189,7 +264,13 @@ export default function JobsPage() {
           ) : (
             <div className="flex flex-col gap-3">
               {items.map((job) => (
-                <JobCard key={job.id} job={job} />
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  highlight={job.id === selectedId}
+                  onHover={(h) => setHoveredId(h ? job.id : null)}
+                  onLocate={hasCoords(job) ? () => locate(job.id) : undefined}
+                />
               ))}
               {items.length < total && (
                 <Button variant="secondary" onClick={loadMore} loading={loadingMore} className="mt-2 self-center">
@@ -199,11 +280,14 @@ export default function JobsPage() {
             </div>
           )}
         </div>
-        {mapVisible && (
-          <aside className="hidden lg:block">
-            <div className="sticky top-24 h-[calc(100dvh-8rem)] max-h-[640px] overflow-hidden rounded-xl border border-line shadow-card">
-              <JobMap jobs={items} />
+        {isDesktop && showMap && (
+          <aside aria-label="Job map">
+            <div className="sticky top-24 h-[calc(100dvh-8rem)] min-h-[420px] overflow-hidden rounded-xl border border-line shadow-card">
+              {map}
             </div>
+            {!loading && items.length > 0 && locatedCount === 0 && (
+              <p className="mt-2 text-[12.5px] text-muted">None of these results have a map pin yet — they&apos;re remote or the poster didn&apos;t add a location.</p>
+            )}
           </aside>
         )}
       </div>

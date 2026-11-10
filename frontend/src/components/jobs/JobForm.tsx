@@ -1,7 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import { LocateFixed, X } from "lucide-react";
+import { LocateFixed, MapPinned, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/display";
 import { Alert } from "@/components/ui/feedback";
@@ -9,6 +10,24 @@ import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { ApiError, errorMessage } from "@/lib/api";
 import { EXPERIENCE_LEVELS, JOB_CATEGORIES, JOB_TYPES, type Job } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const LocationPicker = dynamic(() => import("@/components/jobs/LocationPicker"), {
+  ssr: false,
+  loading: () => <div className="h-full w-full animate-pulse bg-subtle" />,
+});
+
+/**
+ * Looks up the typed address with OpenStreetMap's Nominatim geocoder (one request per click, as its usage
+ * policy asks). The coordinates come from OSM — nothing is invented; the poster can still adjust the pin.
+ */
+async function geocode(query: string): Promise<{ lat: number; lng: number; label: string } | null> {
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=en&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error(`Location lookup failed (${res.status}).`);
+  const rows = (await res.json()) as { lat: string; lon: string; display_name: string }[];
+  if (!rows.length) return null;
+  return { lat: +(+rows[0].lat).toFixed(6), lng: +(+rows[0].lon).toFixed(6), label: rows[0].display_name };
+}
 
 export type JobPayload = {
   title: string;
@@ -93,7 +112,32 @@ export function JobForm({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const [geoMatch, setGeoMatch] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(() => job?.lat != null && job?.lng != null);
+
+  const findOnMap = async () => {
+    const query = f.location_name.trim();
+    if (!query) return setGeoError("Type the address or area first.");
+    setGeocoding(true);
+    setGeoError(null);
+    setGeoMatch(null);
+    try {
+      const hit = await geocode(query);
+      if (!hit) setGeoError("OpenStreetMap couldn't find that place. Try a nearby landmark or area, or click the map to drop a pin.");
+      else {
+        setF((cur) => ({ ...cur, lat: hit.lat, lng: hit.lng }));
+        setGeoMatch(hit.label);
+      }
+      setShowPicker(true);
+    } catch (err) {
+      setGeoError(err instanceof Error ? err.message : "Location lookup failed.");
+      setShowPicker(true);
+    } finally {
+      setGeocoding(false);
+    }
+  };
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((cur) => ({ ...cur, [k]: v }));
   const bind = (k: keyof FormState) => ({
@@ -108,6 +152,8 @@ export function JobForm({
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setF((cur) => ({ ...cur, lat: +pos.coords.latitude.toFixed(6), lng: +pos.coords.longitude.toFixed(6) }));
+        setGeoMatch("Your current location");
+        setShowPicker(true);
         setLocating(false);
       },
       (err) => {
@@ -201,7 +247,7 @@ export function JobForm({
       <Card className="p-5 sm:p-6">
         <h2 className="text-[15px] font-semibold">Location</h2>
         <div className="mt-4 flex flex-col gap-4">
-          <div className="inline-flex w-fit rounded-lg border border-line bg-subtle/70 p-1" role="radiogroup" aria-label="Work mode">
+          <div className="inline-flex w-fit rounded-lg border border-line bg-subtle p-1" role="radiogroup" aria-label="Work mode">
             {[
               { v: false, label: "On-site" },
               { v: true, label: "Remote" },
@@ -214,7 +260,7 @@ export function JobForm({
                 onClick={() => set("is_remote", o.v)}
                 className={cn(
                   "rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-colors",
-                  f.is_remote === o.v ? "bg-surface text-ink shadow-xs" : "text-muted hover:text-ink",
+                  f.is_remote === o.v ? "bg-brand text-on-brand shadow-xs" : "text-muted hover:text-ink",
                 )}
               >
                 {o.label}
@@ -225,20 +271,52 @@ export function JobForm({
             <Input id="job-location_name" {...bind("location_name")} maxLength={120} placeholder={f.is_remote ? "Anywhere" : "Hyderabad, Telangana"} />
           </Field>
           {!f.is_remote && (
-            <div className="flex flex-wrap items-center gap-3">
-              {f.lat != null && f.lng != null ? (
-                <span className="inline-flex items-center gap-2 rounded-lg border border-line bg-canvas px-3 py-1.5 text-[13px] text-ink-2">
-                  Pinned at {f.lat.toFixed(4)}, {f.lng.toFixed(4)}
-                  <button type="button" onClick={() => setF((c) => ({ ...c, lat: null, lng: null }))} className="text-faint hover:text-ink" aria-label="Remove map pin">
-                    <X className="size-3.5" />
-                  </button>
+            <div className="flex flex-col gap-3 rounded-xl border border-line bg-subtle p-3.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="mr-auto inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-2">
+                  <MapPinned className="size-4 text-brand" /> Map pin
+                  <span className="font-normal text-faint">· shows this job on the map</span>
                 </span>
-              ) : (
-                <Button variant="secondary" size="sm" onClick={locate} loading={locating}>
-                  {!locating && <LocateFixed />} Pin my current location on the map
+                <Button variant="secondary" size="sm" onClick={findOnMap} loading={geocoding}>
+                  {!geocoding && <Search />} Find address on map
                 </Button>
+                <Button variant="ghost" size="sm" onClick={locate} loading={locating}>
+                  {!locating && <LocateFixed />} Use my location
+                </Button>
+                {!showPicker && (
+                  <Button variant="ghost" size="sm" onClick={() => setShowPicker(true)}>
+                    Pick on map
+                  </Button>
+                )}
+              </div>
+              {f.lat != null && f.lng != null ? (
+                <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
+                  <span className="inline-flex items-center gap-2 rounded-lg border border-accent/35 bg-accent-soft px-2.5 py-1 font-medium text-accent-ink">
+                    Pinned at {f.lat.toFixed(5)}, {f.lng.toFixed(5)}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setF((c) => ({ ...c, lat: null, lng: null }));
+                        setGeoMatch(null);
+                      }}
+                      className="text-accent-ink/80 hover:text-ink"
+                      aria-label="Remove map pin"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </span>
+                  {geoMatch && <span className="min-w-0 truncate text-muted" title={geoMatch}>{geoMatch}</span>}
+                </div>
+              ) : (
+                <p className="text-[12.5px] text-muted">No pin yet — the job will be listed but won&apos;t appear on the map until you add one.</p>
               )}
-              {geoError && <span className="text-[12.5px] text-red-600">{geoError}</span>}
+              {geoError && <p className="text-[12.5px] text-brand-ink">{geoError}</p>}
+              {showPicker && (
+                <div className="h-60 overflow-hidden rounded-lg border border-line">
+                  <LocationPicker lat={f.lat} lng={f.lng} onChange={(lat, lng) => setF((c) => ({ ...c, lat, lng }))} />
+                </div>
+              )}
+              {showPicker && <p className="text-[12px] text-faint">Click the map to drop the pin, or drag it to the exact spot.</p>}
             </div>
           )}
         </div>

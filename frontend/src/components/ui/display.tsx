@@ -37,12 +37,12 @@ export const badgeVariants = cva(
       tone: {
         neutral: "border-line bg-subtle text-ink-2",
         outline: "border-line bg-surface text-ink-2",
-        brand: "border-brand/15 bg-brand-soft text-brand-ink",
-        success: "border-silver-700 bg-silver-700 text-silver-50",
-        warning: "border-silver-500 bg-silver-400 text-silver-900",
-        danger: "border-line bg-surface text-faint line-through decoration-faint/60",
-        violet: "border-silver-500 bg-silver-400 text-silver-900",
-        solid: "border-silver-800 bg-silver-800 text-silver-50",
+        brand: "border-brand/30 bg-brand-soft text-brand-ink",
+        success: "border-accent/30 bg-accent-soft text-accent-ink",
+        warning: "border-brand/30 bg-brand-soft text-brand-ink",
+        danger: "border-brand/25 bg-brand-soft text-brand-ink",
+        violet: "border-accent/30 bg-accent-soft text-accent-ink",
+        solid: "border-accent bg-accent text-on-accent",
       },
     },
     defaultVariants: { tone: "neutral" },
@@ -53,20 +53,20 @@ export function Badge({ className, tone, ...props }: React.HTMLAttributes<HTMLSp
   return <span className={cn(badgeVariants({ tone }), className)} {...props} />;
 }
 
-/** Application statuses are told apart by icon and silver weight (outline → light → medium → deep). */
+/** Application statuses: neutral while open, green as they progress, solid green when accepted, red when declined. */
 const STATUS: Record<ApplicationStatus, { label: string; tone: VariantProps<typeof badgeVariants>["tone"]; icon: LucideIcon }> = {
   pending: { label: "Submitted", tone: "outline", icon: Send },
   reviewing: { label: "In review", tone: "neutral", icon: Eye },
-  shortlisted: { label: "Shortlisted", tone: "warning", icon: Star },
-  accepted: { label: "Accepted", tone: "success", icon: CheckCircle2 },
-  rejected: { label: "Not selected", tone: "outline", icon: XCircle },
+  shortlisted: { label: "Shortlisted", tone: "success", icon: Star },
+  accepted: { label: "Accepted", tone: "solid", icon: CheckCircle2 },
+  rejected: { label: "Not selected", tone: "danger", icon: XCircle },
   withdrawn: { label: "Withdrawn", tone: "outline", icon: Undo2 },
 };
 
 export function StatusBadge({ status }: { status: ApplicationStatus | string }) {
   const s = STATUS[status as ApplicationStatus] || { label: status, tone: "neutral" as const, icon: Eye };
   const Icon = s.icon;
-  const dim = status === "rejected" || status === "withdrawn";
+  const dim = status === "withdrawn";
   return (
     <Badge tone={s.tone} className={dim ? "text-faint" : undefined}>
       <Icon aria-hidden="true" />
@@ -78,12 +78,12 @@ export function StatusBadge({ status }: { status: ApplicationStatus | string }) 
 export const statusLabel = (s: string) => STATUS[s as ApplicationStatus]?.label || s;
 
 const AVATAR_TONES = [
-  "bg-silver-700 text-silver-50",
-  "bg-silver-600 text-silver-50",
-  "bg-silver-500 text-silver-900",
-  "bg-silver-400 text-silver-800",
-  "bg-silver-800 text-silver-100",
-  "bg-gradient-to-br from-silver-500 to-silver-700 text-silver-50",
+  "bg-brand text-on-brand",
+  "bg-accent text-on-accent",
+  "bg-brand-soft text-brand-ink ring-1 ring-brand/30",
+  "bg-accent-soft text-accent-ink ring-1 ring-accent/30",
+  "bg-raised text-ink ring-1 ring-line-strong",
+  "bg-gradient-to-br from-brand to-[#8f1f1c] text-on-brand",
 ];
 
 function toneFor(seed: string) {
@@ -121,12 +121,30 @@ export function Avatar({
   );
 }
 
-export function Stat({ label, value, hint, icon }: { label: string; value: React.ReactNode; hint?: React.ReactNode; icon?: React.ReactNode }) {
+export function Stat({
+  label,
+  value,
+  hint,
+  icon,
+  tone = "neutral",
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: React.ReactNode;
+  icon?: React.ReactNode;
+  tone?: "neutral" | "red" | "green";
+}) {
+  const iconTone =
+    tone === "red"
+      ? "border-brand/30 bg-brand-soft text-brand-ink"
+      : tone === "green"
+        ? "border-accent/30 bg-accent-soft text-accent-ink"
+        : "border-line bg-subtle text-muted";
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between text-[13px] text-muted">
         <span>{label}</span>
-        {icon && <span className="flex size-7 items-center justify-center rounded-md border border-line bg-subtle text-muted [&_svg]:size-3.5">{icon}</span>}
+        {icon && <span className={cn("flex size-7 items-center justify-center rounded-md border [&_svg]:size-3.5", iconTone)}>{icon}</span>}
       </div>
       <div className="mt-2 text-[26px] font-semibold leading-none tracking-[-0.02em] text-ink tabular-nums">{value}</div>
       {hint && <div className="mt-1.5 text-[12.5px] text-muted">{hint}</div>}

@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Briefcase, CalendarClock, Check, Clock, Copy, GraduationCap, Layers, MessageSquare, Pencil, Share2, Users } from "lucide-react";
+import { ArrowLeft, Briefcase, CalendarClock, Check, Clock, Copy, GraduationCap, Layers, MessageSquare, Navigation, Pencil, Share2, Users } from "lucide-react";
 import { ApplyDialog } from "@/components/jobs/ApplyDialog";
 import { JobLocation, SaveButton } from "@/components/jobs/JobCard";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -33,7 +33,7 @@ export default function JobDetailPage() {
   const router = useRouter();
   const pathname = usePathname();
   const toast = useToast();
-  const { status, hasRole } = useAuth();
+  const { status } = useAuth();
   const { data: job, error, loading, reload, setData } = useApi<Job>(`/jobs/${id}`);
   const [manualOpen, setManualOpen] = useState(false);
   const [autoDismissed, setAutoDismissed] = useState(false);
@@ -41,7 +41,7 @@ export default function JobDetailPage() {
 
   const canApply = !!job && job.status === "open" && !job.is_owner && !job.has_applied;
   // `?apply=1` (e.g. after signing in from "Apply now") opens the dialog once.
-  const autoOpen = params.get("apply") === "1" && canApply && status === "authenticated" && hasRole("seeker") && !autoDismissed;
+  const autoOpen = params.get("apply") === "1" && canApply && status === "authenticated" && !autoDismissed;
   const applyOpen = manualOpen || autoOpen;
   const setApplyOpen = (open: boolean) => {
     setManualOpen(open);
@@ -96,14 +96,13 @@ export default function JobDetailPage() {
 
   const skills = splitSkills(job.skills_required);
   const located = typeof job.lat === "number" && typeof job.lng === "number";
-  const isSeeker = status === "authenticated" && hasRole("seeker");
 
   const primaryAction = job.is_owner ? (
     <div className="flex flex-wrap gap-2">
-      <ButtonLink href={`/employer/applicants?job=${job.id}`} variant="secondary">
+      <ButtonLink href={`/applicants?job=${job.id}`} variant="secondary">
         <Users /> Applicants{typeof job.applicant_count === "number" ? ` (${job.applicant_count})` : ""}
       </ButtonLink>
-      <ButtonLink href={`/employer/jobs/${job.id}/edit`}>
+      <ButtonLink href={`/listings/${job.id}/edit`}>
         <Pencil /> Edit listing
       </ButtonLink>
     </div>
@@ -118,8 +117,6 @@ export default function JobDetailPage() {
     </div>
   ) : job.status !== "open" ? (
     <Badge tone="warning" className="h-9 px-3 text-[13px]">No longer accepting applications</Badge>
-  ) : status === "authenticated" && !isSeeker ? (
-    <ButtonLink href="/settings#roles" variant="secondary">Enable job seeking to apply</ButtonLink>
   ) : (
     <Button size="lg" onClick={startApply}>
       Apply now
@@ -206,10 +203,18 @@ export default function JobDetailPage() {
           {located && (
             <Card className="overflow-hidden">
               <div className="h-56">
-                <JobMap jobs={[job]} />
+                <JobMap jobs={[job]} compact />
               </div>
-              <div className="px-4 py-3 text-[13px] text-muted">
+              <div className="flex items-center justify-between gap-3 px-4 py-3 text-[13px] text-muted">
                 <JobLocation job={job} />
+                <a
+                  href={`https://www.openstreetmap.org/directions?to=${job.lat}%2C${job.lng}#map=15/${job.lat}/${job.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex shrink-0 items-center gap-1 font-medium text-accent-ink hover:text-accent-hover"
+                >
+                  <Navigation className="size-3.5" /> Directions
+                </a>
               </div>
             </Card>
           )}

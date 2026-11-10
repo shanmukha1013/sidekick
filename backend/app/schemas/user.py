@@ -105,7 +105,8 @@ class AuthResponse(BaseModel):
 
 
 class OnboardingIn(BaseModel):
-    roles: List[Role] = Field(min_length=1)
+    # Accepted for older clients; every account can both find work and hire.
+    roles: List[Role] = Field(default_factory=lambda: ["employer", "seeker"])
     headline: Optional[str] = Field(default=None, max_length=120)
     location: Optional[str] = Field(default=None, max_length=120)
     skills: Optional[List[str]] = None
@@ -119,14 +120,6 @@ class OnboardingIn(BaseModel):
     def _website(cls, v: Optional[str]) -> Optional[str]:
         return normalize_website(v)
 
-    @model_validator(mode="after")
-    def _employer_needs_company(self):
-        self.roles = sorted(set(self.roles))  # type: ignore[assignment]
-        if "employer" in self.roles and not (self.company_name or "").strip():
-            raise ValueError("Company or organization name is required to hire on Sidekick.")
-        return self
-
-
 class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, min_length=2, max_length=80)
     phone: Optional[str] = None
@@ -138,7 +131,7 @@ class UserUpdate(BaseModel):
 
 
 class RolesUpdate(BaseModel):
-    roles: List[Role] = Field(min_length=1)
+    roles: List[Role] = Field(default_factory=lambda: ["employer", "seeker"])
 
 
 class ForgotPasswordIn(BaseModel):

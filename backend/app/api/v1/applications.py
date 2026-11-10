@@ -144,7 +144,7 @@ async def withdraw(application_id: str, user: dict = Depends(get_current_user), 
             "application_withdrawn",
             f"An applicant withdrew from “{job['title']}”",
             f"{user.get('full_name') or user.get('username')} withdrew their application.",
-            f"/employer/applicants?job={job['_id']}",
+            f"/applicants?job={job['_id']}",
         )
     app.update({"status": "withdrawn", "updated_at": now})
     return application_out(app, job=job_out(job) if job else None)

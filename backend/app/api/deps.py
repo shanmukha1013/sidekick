@@ -65,22 +65,14 @@ async def get_optional_user(
         return None
 
 
-async def get_onboarded_user(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
-    if not user.get("onboarded", bool(user["roles"])) or not user["roles"]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please complete onboarding first.")
-    return user
-
-
 def require_role(role: str):
-    """Authorization is decided from the roles stored in MongoDB, never from client-supplied values."""
+    """Sidekick is one marketplace: every signed-in account can both hire and apply.
 
-    async def checker(user: Dict[str, Any] = Depends(get_onboarded_user)) -> Dict[str, Any]:
-        if role not in user["roles"]:
-            label = "hiring" if role == "employer" else "job seeking"
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Your account does not have {label} enabled. You can enable it in Settings.",
-            )
+    Endpoints still declare which capability they use, but access is no longer split by role.
+    Ownership (jobs, applicants, conversations) is enforced inside each endpoint.
+    """
+
+    async def checker(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
         return user
 
     return checker

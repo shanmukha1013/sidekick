@@ -3,13 +3,22 @@ from typing import Any, Dict, List, Optional
 
 LEGACY_ROLE_MAP = {"WORKER": "seeker", "EMPLOYER": "employer"}
 
+# Sidekick is one marketplace: every account can both find work and hire. These are the capabilities
+# reported for (and enforced on) every user, regardless of what was chosen at sign-up.
+ALL_CAPABILITIES: List[str] = ["employer", "seeker"]
 
-def user_roles(user: Dict[str, Any]) -> List[str]:
+
+def stored_roles(user: Dict[str, Any]) -> List[str]:
+    """The roles recorded on the document (kept for history; no longer used to restrict access)."""
     roles = user.get("roles")
     if isinstance(roles, list):
         return [r for r in roles if r in ("seeker", "employer")]
     legacy = LEGACY_ROLE_MAP.get(str(user.get("role", "")).upper())
     return [legacy] if legacy else []
+
+
+def user_roles(user: Dict[str, Any]) -> List[str]:
+    return list(ALL_CAPABILITIES)
 
 
 def user_out(user: Dict[str, Any]) -> Dict[str, Any]:
@@ -20,7 +29,7 @@ def user_out(user: Dict[str, Any]) -> Dict[str, Any]:
         "email": user.get("email", ""),
         "phone": user.get("phone") or user.get("phone_number"),
         "roles": user_roles(user),
-        "onboarded": bool(user.get("onboarded", bool(user_roles(user)))),
+        "onboarded": bool(user.get("onboarded", True)),
         "created_at": user.get("created_at"),
     }
 

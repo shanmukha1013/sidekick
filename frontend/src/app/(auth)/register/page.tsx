@@ -123,7 +123,7 @@ function RegisterForm() {
 
       {demo && (
         <div className="mt-6 flex gap-3 rounded-xl border border-line bg-subtle p-4">
-          <HardDrive className="mt-0.5 size-4 shrink-0 text-silver-700" />
+          <HardDrive className="mt-0.5 size-4 shrink-0 text-accent" />
           <div>
             <p className="text-[13px] font-semibold text-ink">Demo mode — local data</p>
             <p className="mt-0.5 text-[13px] leading-relaxed text-muted">

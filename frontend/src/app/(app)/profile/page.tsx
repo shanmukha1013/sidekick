@@ -50,7 +50,7 @@ export default function ProfilePage() {
 }
 
 function ProfileEditor({ data, setData }: { data: Profile; setData: (p: Profile) => void }) {
-  const { user, hasRole } = useAuth();
+  const { user } = useAuth();
   const toast = useToast();
   const [form, setForm] = useState<Form>(() => toForm(data));
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -71,7 +71,6 @@ function ProfileEditor({ data, setData }: { data: Profile; setData: (p: Profile)
     const bad = links.find((l) => !/^https?:\/\//i.test(l));
     const v: Record<string, string> = {};
     if (bad) v.portfolio_links = `“${bad}” must start with http:// or https://`;
-    if (hasRole("employer") && !form.company_name.trim()) v.company_name = "Company name is required while hiring is enabled.";
     setErrors(v);
     setFormError(null);
     if (Object.keys(v).length) return;
@@ -89,9 +88,9 @@ function ProfileEditor({ data, setData }: { data: Profile; setData: (p: Profile)
         experience: form.experience.trim() || null,
         education: form.education.trim() || null,
         portfolio_links: links,
-        ...(hasRole("employer") || form.company_name
-          ? { company_name: form.company_name.trim() || null, company_website: website || null, company_description: form.company_description.trim() || null }
-          : {}),
+        company_name: form.company_name.trim() || null,
+        company_website: website || null,
+        company_description: form.company_description.trim() || null,
       });
       setData(updated);
       setForm(toForm(updated));
@@ -124,8 +123,8 @@ function ProfileEditor({ data, setData }: { data: Profile; setData: (p: Profile)
   return (
     <div className="max-w-3xl">
       <PageHeader
-        title="Profile"
-        description="This is what employers and candidates see about you."
+        title="My Profile"
+        description="One profile for finding work and hiring — this is what employers and candidates see."
         actions={
           user && (
             <ButtonLink href={`/people/${user.id}`} variant="secondary" size="sm">
@@ -178,47 +177,50 @@ function ProfileEditor({ data, setData }: { data: Profile; setData: (p: Profile)
           </div>
         </Card>
 
-        {hasRole("seeker") && (
-          <Card className="p-5 sm:p-6">
-            <h2 className="text-[15px] font-semibold">Work profile</h2>
-            <div className="mt-4 flex flex-col gap-4">
-              <Field label="Skills" hint="Used to recommend jobs. Press Enter or comma to add.">
-                <TagInput value={form.skills} onChange={set("skills")} placeholder="Add a skill" />
-              </Field>
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-medium text-ink-2">Job interests</span>
-                <ChipSelect options={JOB_CATEGORIES} value={form.preferred_categories} onChange={set("preferred_categories")} />
-              </div>
-              <Field label="Experience">
-                <Textarea {...bind("experience")} rows={4} maxLength={4000} placeholder="Past jobs, internships, volunteering…" />
-              </Field>
-              <Field label="Education">
-                <Textarea {...bind("education")} rows={2} maxLength={2000} />
-              </Field>
-              <Field label="Portfolio links" hint="One URL per line" error={errors.portfolio_links}>
-                <Textarea {...bind("portfolio_links")} rows={2} placeholder="https://" />
-              </Field>
+        <Card className="p-5 sm:p-6">
+          <h2 className="flex items-center gap-2 text-[15px] font-semibold">
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-brand" /> Work profile
+          </h2>
+          <p className="mt-0.5 text-[13px] text-muted">Used when you apply for jobs and for recommendations.</p>
+          <div className="mt-4 flex flex-col gap-4">
+            <Field label="Skills" hint="Used to recommend jobs. Press Enter or comma to add.">
+              <TagInput value={form.skills} onChange={set("skills")} placeholder="Add a skill" />
+            </Field>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[13px] font-medium text-ink-2">Job interests</span>
+              <ChipSelect options={JOB_CATEGORIES} value={form.preferred_categories} onChange={set("preferred_categories")} />
             </div>
-          </Card>
-        )}
+            <Field label="Experience">
+              <Textarea {...bind("experience")} rows={4} maxLength={4000} placeholder="Past jobs, internships, volunteering…" />
+            </Field>
+            <Field label="Education">
+              <Textarea {...bind("education")} rows={2} maxLength={2000} />
+            </Field>
+            <Field label="Portfolio links" hint="One URL per line" error={errors.portfolio_links}>
+              <Textarea {...bind("portfolio_links")} rows={2} placeholder="https://" />
+            </Field>
+          </div>
+        </Card>
 
-        {(hasRole("employer") || !!data.company_name) && (
-          <Card className="p-5 sm:p-6">
-            <h2 className="text-[15px] font-semibold">Company</h2>
-            <p className="mt-0.5 text-[13px] text-muted">Shown on your job listings.</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Field label="Company name" required={hasRole("employer")} error={errors.company_name}>
-                <Input {...bind("company_name")} maxLength={120} />
-              </Field>
-              <Field label="Website">
-                <Input {...bind("company_website")} placeholder="example.com" />
-              </Field>
-              <Field label="About the company" className="sm:col-span-2">
-                <Textarea {...bind("company_description")} rows={3} maxLength={2000} />
-              </Field>
-            </div>
-          </Card>
-        )}
+        <Card className="p-5 sm:p-6">
+          <h2 className="flex items-center gap-2 text-[15px] font-semibold">
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-accent" /> Hiring profile
+          </h2>
+          <p className="mt-0.5 text-[13px] text-muted">
+            Optional. Shown on the jobs you post — if you leave it blank, your listings show your name.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <Field label="Company or organization" error={errors.company_name}>
+              <Input {...bind("company_name")} maxLength={120} />
+            </Field>
+            <Field label="Website">
+              <Input {...bind("company_website")} placeholder="example.com" />
+            </Field>
+            <Field label="About the company" className="sm:col-span-2">
+              <Textarea {...bind("company_description")} rows={3} maxLength={2000} />
+            </Field>
+          </div>
+        </Card>
 
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setForm(toForm(data))} disabled={saving}>

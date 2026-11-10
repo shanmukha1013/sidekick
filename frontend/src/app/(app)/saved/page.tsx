@@ -1,7 +1,6 @@
 "use client";
 
 import { Bookmark } from "lucide-react";
-import { RequireRole } from "@/components/app/RequireRole";
 import { JobCard } from "@/components/jobs/JobCard";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/display";
@@ -11,9 +10,7 @@ import type { Job } from "@/lib/types";
 
 export default function SavedJobsPage() {
   return (
-    <RequireRole role="seeker">
-      <SavedJobs />
-    </RequireRole>
+    <SavedJobs />
   );
 }
 
@@ -21,7 +18,7 @@ function SavedJobs() {
   const { data, error, loading, reload, setData } = useApi<Job[]>("/saved-jobs");
   return (
     <div className="max-w-3xl">
-      <PageHeader title="Saved jobs" description="Jobs you've bookmarked to come back to." />
+      <PageHeader title="Saved Jobs" description="Jobs you've bookmarked to come back to." />
       {loading ? (
         <SkeletonRows count={3} />
       ) : error ? (

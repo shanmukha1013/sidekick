@@ -74,7 +74,7 @@ const EMPLOYER_POINTS = [
   { icon: Briefcase, title: "Post a job in minutes", body: "Describe the role, pay and schedule. It goes live immediately." },
   { icon: Users, title: "Review applicants", body: "Read cover notes and profiles, then shortlist, accept or decline." },
   { icon: MessageSquare, title: "Talk in context", body: "Message candidates from each application and keep hiring organised." },
-  { icon: LayoutDashboard, title: "One hiring dashboard", body: "See open roles, new applicants and status changes at a glance." },
+  { icon: LayoutDashboard, title: "One dashboard for everything", body: "Your listings, applicants, applications and saved jobs side by side." },
 ];
 
 const delay = (ms: number) => ({ animationDelay: `${ms}ms` });
@@ -86,7 +86,7 @@ export default function LandingPage() {
   const [loc, setLoc] = useState("");
   const latest = useApi<JobList>("/jobs?limit=4");
   const authed = status === "authenticated";
-  const postHref = authed ? "/employer/jobs/new" : "/register";
+  const postHref = authed ? "/post-job" : "/register";
 
   const search = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,9 +102,9 @@ export default function LandingPage() {
         <div className="container-page flex h-16 items-center justify-between gap-4">
           <Logo />
           <nav className="hidden items-center gap-1 text-[14px] text-ink-2 md:flex" aria-label="Primary">
-            <Link href="/jobs" className="rounded-md px-3 py-1.5 transition-colors hover:bg-silver-200 hover:text-ink">Find jobs</Link>
-            <a href="#how-it-works" className="rounded-md px-3 py-1.5 transition-colors hover:bg-silver-200 hover:text-ink">How it works</a>
-            <a href="#employers" className="rounded-md px-3 py-1.5 transition-colors hover:bg-silver-200 hover:text-ink">For employers</a>
+            <Link href="/jobs" className="rounded-md px-3 py-1.5 transition-colors hover:bg-raised hover:text-ink">Find jobs</Link>
+            <a href="#how-it-works" className="rounded-md px-3 py-1.5 transition-colors hover:bg-raised hover:text-ink">How it works</a>
+            <a href="#employers" className="rounded-md px-3 py-1.5 transition-colors hover:bg-raised hover:text-ink">Hiring</a>
           </nav>
           <div className="flex items-center gap-2">
             <DemoBadge />
@@ -124,22 +124,22 @@ export default function LandingPage() {
 
       <main>
         {/* Hero */}
-        <section className="relative overflow-hidden border-b border-line bg-silver-sheen">
+        <section className="relative overflow-hidden border-b border-line bg-hero-glow">
           <div aria-hidden="true" className="bg-grid pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black_20%,transparent_75%)]" />
-          <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-[-18rem] h-[36rem] w-[60rem] -translate-x-1/2 rounded-full bg-silver-50/70 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-[-18rem] h-[36rem] w-[60rem] -translate-x-1/2 rounded-full bg-brand/10 blur-3xl" />
           <div className="container-page relative pb-20 pt-14 text-center sm:pb-24 sm:pt-20">
             <p className="mx-auto inline-flex animate-rise items-center gap-2 rounded-full border border-line-strong/70 bg-surface/80 px-3 py-1 text-[12.5px] font-medium text-ink-2 shadow-xs backdrop-blur" style={delay(0)}>
-              <span className="size-1.5 rounded-full bg-silver-700" /> Part-time, flexible and entry-level work
+              <span className="size-1.5 animate-pulse-ring rounded-full bg-accent" /> Find work and hire — from one account
             </p>
             <h1
               className="mx-auto mt-6 max-w-4xl animate-rise text-balance text-[42px] font-semibold leading-[1.03] tracking-[-0.04em] text-ink sm:text-[68px]"
               style={delay(80)}
             >
               Work that fits{" "}
-              <span className="bg-gradient-to-b from-silver-600 to-silver-800 bg-clip-text text-transparent">around your life.</span>
+              <span className="bg-gradient-to-b from-[#ff6a66] to-brand bg-clip-text text-transparent">around your life.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl animate-rise text-[16px] leading-relaxed text-muted sm:text-[18px]" style={delay(160)}>
-              Sidekick connects students and job seekers with employers hiring for flexible roles — one account to apply, hire and talk.
+              Sidekick is one marketplace for flexible work. Apply for jobs and hire people from the same account and the same dashboard.
             </p>
 
             <form
@@ -186,14 +186,14 @@ export default function LandingPage() {
         <section className="container-page py-20">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center lg:gap-12">
             <div>
-              <p className="text-[12.5px] font-semibold uppercase tracking-[0.12em] text-faint">For job seekers</p>
+              <p className="flex items-center gap-2 text-[12.5px] font-semibold uppercase tracking-[0.12em] text-brand-ink"><span className="size-1.5 rounded-full bg-brand" /> Find work</p>
               <h2 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.03em] text-ink sm:text-[36px]">
                 From search to offer, without the guesswork.
               </h2>
               <div className="mt-8 grid gap-5 sm:grid-cols-3 lg:grid-cols-1">
                 {FEATURES.map(({ icon: Icon, title, body }) => (
                   <div key={title} className="flex gap-4">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-silver-700 shadow-xs">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-brand/30 bg-brand-soft text-brand-ink">
                       <Icon className="size-[18px]" />
                     </span>
                     <div>
@@ -236,7 +236,7 @@ export default function LandingPage() {
         </section>
 
         {/* Categories */}
-        <section className="border-y border-line bg-subtle/70 py-20">
+        <section className="border-y border-line bg-surface py-20">
           <div className="container-page">
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
               <div>
@@ -254,9 +254,9 @@ export default function LandingPage() {
                   <Link
                     key={c}
                     href={`/jobs?category=${encodeURIComponent(c)}`}
-                    className="group flex items-center gap-3 rounded-xl border border-line bg-surface p-4 shadow-xs transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-lift"
+                    className="group flex items-center gap-3 rounded-xl border border-line bg-surface p-4 shadow-xs transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-lift"
                   >
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-canvas text-silver-700 transition-colors group-hover:border-silver-700 group-hover:bg-silver-700 group-hover:text-silver-50">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-canvas text-brand-ink transition-colors group-hover:border-brand group-hover:bg-brand group-hover:text-on-brand">
                       <Icon className="size-[17px]" />
                     </span>
                     <span className="min-w-0 text-[13.5px] font-medium leading-snug text-ink-2 group-hover:text-ink">{c}</span>
@@ -293,13 +293,13 @@ export default function LandingPage() {
             <div className="mx-auto max-w-2xl text-center">
               <p className="text-[12.5px] font-semibold uppercase tracking-[0.12em] text-faint">How it works</p>
               <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.03em] text-ink sm:text-[36px]">One account. Both sides of the job.</h2>
-              <p className="mt-2 text-[15px] text-muted">Everyone signs up the same way. Choose to find work, hire, or both — and switch any time.</p>
+              <p className="mt-2 text-[15px] text-muted">Everyone signs up the same way, and every account can do both. Apply for jobs and post your own from one dashboard.</p>
             </div>
             <ol className="mt-12 grid gap-4 md:grid-cols-3">
               {SEEKER_STEPS.map(({ icon: Icon, title, body }, i) => (
                 <li key={title} className="relative rounded-2xl border border-line bg-surface p-6 shadow-card">
                   <div className="flex items-center justify-between">
-                    <span className="flex size-10 items-center justify-center rounded-xl bg-silver-700 text-silver-50 shadow-xs">
+                    <span className="flex size-10 items-center justify-center rounded-xl bg-brand text-on-brand shadow-glow-red">
                       <Icon className="size-[18px]" />
                     </span>
                     <span className="font-mono text-[12px] text-faint">0{i + 1}</span>
@@ -314,40 +314,40 @@ export default function LandingPage() {
 
         {/* For employers */}
         <section id="employers" className="container-page scroll-mt-20 pb-20">
-          <div className="relative overflow-hidden rounded-3xl bg-silver-deep px-6 py-12 text-silver-50 sm:px-12 sm:py-16">
+          <div className="relative overflow-hidden rounded-3xl border border-line bg-brand-panel px-6 py-12 text-ink sm:px-12 sm:py-16">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 opacity-[0.07]"
+              className="pointer-events-none absolute inset-0 opacity-[0.05]"
               style={{
-                backgroundImage: "linear-gradient(to right,#f8f9fa 1px,transparent 1px),linear-gradient(to bottom,#f8f9fa 1px,transparent 1px)",
+                backgroundImage: "linear-gradient(to right,#fff 1px,transparent 1px),linear-gradient(to bottom,#fff 1px,transparent 1px)",
                 backgroundSize: "44px 44px",
                 maskImage: "radial-gradient(ellipse at 80% 0%, black 10%, transparent 70%)",
               }}
             />
             <div className="relative grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-center">
               <div>
-                <p className="text-[12.5px] font-semibold uppercase tracking-[0.12em] text-silver-400">For employers</p>
+                <p className="flex items-center gap-2 text-[12.5px] font-semibold uppercase tracking-[0.12em] text-accent-ink"><span className="size-1.5 rounded-full bg-accent" /> Hire talent</p>
                 <h2 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.03em] sm:text-[38px]">Hire reliable people for flexible roles.</h2>
-                <p className="mt-3 max-w-md text-[15px] leading-relaxed text-silver-400">
-                  Post a role, review applicants and message candidates — all from one dashboard. Turn hiring on from the same account you already use.
+                <p className="mt-3 max-w-md text-[15px] leading-relaxed text-muted">
+                  Post a role, review applicants and message candidates — from the same account and dashboard you use to find work. Nothing to switch on.
                 </p>
                 <div className="mt-8 flex flex-col gap-2 sm:flex-row">
-                  <ButtonLink href={postHref} size="lg" className="rounded-xl bg-silver-50 text-silver-900 hover:bg-silver-200">
+                  <ButtonLink href={postHref} size="lg" variant="brand" className="rounded-xl">
                     <Briefcase /> Post a job
                   </ButtonLink>
-                  <ButtonLink href="/jobs" size="lg" variant="ghost" className="rounded-xl text-silver-100 hover:bg-white/10 hover:text-white">
+                  <ButtonLink href="/jobs" size="lg" variant="ghost" className="rounded-xl">
                     See live listings <ArrowRight />
                   </ButtonLink>
                 </div>
               </div>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {EMPLOYER_POINTS.map(({ icon: Icon, title, body }) => (
-                  <li key={title} className="rounded-2xl border border-white/12 bg-white/[0.06] p-5 shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]">
-                    <span className="flex size-9 items-center justify-center rounded-lg border border-white/15 bg-white/10">
-                      <Icon className="size-4 text-silver-100" />
+                  <li key={title} className="rounded-2xl border border-line bg-surface/70 p-5 backdrop-blur-sm">
+                    <span className="flex size-9 items-center justify-center rounded-lg border border-accent/30 bg-accent-soft">
+                      <Icon className="size-4 text-accent" />
                     </span>
                     <p className="mt-4 text-[15px] font-semibold">{title}</p>
-                    <p className="mt-1 text-[13.5px] leading-relaxed text-silver-400">{body}</p>
+                    <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{body}</p>
                   </li>
                 ))}
               </ul>
@@ -364,7 +364,7 @@ export default function LandingPage() {
               { icon: MessageSquare, title: "Talk in context", body: "Conversations stay attached to the application they're about." },
             ].map(({ icon: Icon, title, body }) => (
               <div key={title} className="flex gap-3">
-                <Icon className="mt-0.5 size-5 shrink-0 text-silver-700" />
+                <Icon className="mt-0.5 size-5 shrink-0 text-accent" />
                 <div>
                   <p className="text-[14.5px] font-semibold text-ink">{title}</p>
                   <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted">{body}</p>
@@ -387,7 +387,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-line bg-subtle/60">
+      <footer className="border-t border-line bg-surface">
         <div className="container-page flex flex-col items-start justify-between gap-6 py-10 sm:flex-row sm:items-center">
           <div>
             <Logo size={24} wordmarkClassName="text-[15px]" />
@@ -396,7 +396,7 @@ export default function LandingPage() {
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-[13.5px] text-muted" aria-label="Footer">
             <Link href="/jobs" className="hover:text-ink">Find jobs</Link>
             <a href="#how-it-works" className="hover:text-ink">How it works</a>
-            <a href="#employers" className="hover:text-ink">For employers</a>
+            <a href="#employers" className="hover:text-ink">Hiring</a>
             <Link href="/login" className="hover:text-ink">Sign in</Link>
             <Link href="/register" className="hover:text-ink">Create account</Link>
           </nav>

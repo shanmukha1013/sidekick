@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 
 const controlBase =
   "w-full rounded-lg border bg-surface text-[14px] text-ink shadow-xs transition-[border-color,box-shadow] duration-150 placeholder:text-faint disabled:cursor-not-allowed disabled:bg-subtle disabled:text-muted focus:outline-none focus:ring-4";
-const controlOk = "border-line hover:border-line-strong focus:border-brand focus:ring-brand/12";
-const controlErr = "border-red-400 focus:border-red-500 focus:ring-red-500/12";
+const controlOk = "border-line hover:border-line-strong focus:border-accent/70 focus:ring-accent/15";
+const controlErr = "border-brand/70 focus:border-brand focus:ring-brand/20";
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;
@@ -131,7 +131,7 @@ export function Field({
           {label && (
             <Label htmlFor={controlId}>
               {label}
-              {required && <span className="ml-0.5 text-red-500" aria-hidden="true">*</span>}
+              {required && <span className="ml-0.5 text-brand-ink" aria-hidden="true">*</span>}
             </Label>
           )}
           {action}
@@ -141,7 +141,7 @@ export function Field({
         ? cloneElement(children, { id: controlId, "aria-describedby": describedBy, invalid: !!error })
         : children}
       {error ? (
-        <p id={`${id}-error`} className="text-[12.5px] text-red-600" role="alert">
+        <p id={`${id}-error`} className="text-[12.5px] text-brand-ink" role="alert">
           {error}
         </p>
       ) : hint ? (
@@ -188,7 +188,7 @@ export function TagInput({
       <div
         className={cn(
           "flex min-h-10 flex-wrap items-center gap-1.5 rounded-lg border bg-surface px-2 py-1.5 shadow-xs transition-[border-color,box-shadow] focus-within:ring-4",
-          invalid ? controlErr : "border-line focus-within:border-brand focus-within:ring-brand/12",
+          invalid ? controlErr : "border-line focus-within:border-accent/70 focus-within:ring-accent/15",
         )}
       >
         {value.map((tag) => (
@@ -265,7 +265,7 @@ export function ChipSelect({
             onClick={() => onChange(active ? value.filter((v) => v !== opt) : [...value, opt])}
             className={cn(
               "rounded-full border px-3 py-1 text-[13px] transition-colors",
-              active ? "border-silver-700 bg-silver-700 text-silver-50" : "border-line bg-surface text-ink-2 hover:border-line-strong",
+              active ? "border-brand bg-brand-soft text-ink" : "border-line bg-surface text-ink-2 hover:border-line-strong",
             )}
           >
             {opt}

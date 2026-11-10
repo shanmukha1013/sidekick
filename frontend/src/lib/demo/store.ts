@@ -447,9 +447,9 @@ async function seed(): Promise<DemoDB> {
     applications,
     saved: [{ user_id: demoId, job_id: "j_frontend", created_at: hoursAgo(12) }],
     notifications: [
-      { id: uid("n_"), user_id: demoId, type: "application_received", title: "New application for “Operations Assistant”", body: "Priya Sharma applied.", link: "/employer/applicants?job=j_ops", is_read: false, created_at: hoursAgo(6) },
+      { id: uid("n_"), user_id: demoId, type: "application_received", title: "New application for “Operations Assistant”", body: "Priya Sharma applied.", link: "/applicants?job=j_ops", is_read: false, created_at: hoursAgo(6) },
       { id: uid("n_"), user_id: demoId, type: "application_reviewing", title: "Your application for “Junior UI Designer (contract)” is being reviewed", body: "Pixelcraft Studio updated your application status.", link: "/applications", is_read: false, created_at: hoursAgo(8) },
-      { id: uid("n_"), user_id: demoId, type: "application_received", title: "New application for “Operations Assistant”", body: "Neha Iyer applied.", link: "/employer/applicants?job=j_ops", is_read: true, created_at: hoursAgo(18) },
+      { id: uid("n_"), user_id: demoId, type: "application_received", title: "New application for “Operations Assistant”", body: "Neha Iyer applied.", link: "/applicants?job=j_ops", is_read: true, created_at: hoursAgo(18) },
     ],
     messages: [
       { id: uid("m_"), application_id: "a_arjun_photo", sender_id: "u_arjun", recipient_id: demoId, body: "Hi! Thanks for shortlisting me. I'm free for a short test shoot this Saturday if that helps.", created_at: hoursAgo(19), read_at: null },

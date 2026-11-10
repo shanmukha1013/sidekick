@@ -142,9 +142,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 className="pointer-events-auto flex w-full max-w-sm animate-slide-up items-start gap-2.5 rounded-xl border border-line bg-surface px-4 py-3 text-[13.5px] text-ink shadow-pop"
               >
                 {t.tone === "success" ? (
-                  <CheckCircle2 className="mt-px size-4 shrink-0 text-silver-700" />
+                  <CheckCircle2 className="mt-px size-4 shrink-0 text-accent" />
                 ) : (
-                  <AlertCircle className="mt-px size-4 shrink-0 text-red-600" />
+                  <AlertCircle className="mt-px size-4 shrink-0 text-brand" />
                 )}
                 <p className="flex-1 leading-snug">{t.message}</p>
                 <button

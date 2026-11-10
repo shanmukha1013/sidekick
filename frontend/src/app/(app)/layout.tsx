@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AppShell, PublicShell } from "@/components/app/AppShell";
 import { ErrorState, FullPageSpinner } from "@/components/ui/feedback";
 import { ApiError } from "@/lib/api";
-import { useAuth } from "@/lib/auth";
+import { consumeExplicitSignOut, useAuth } from "@/lib/auth";
 
 const isPublic = (path: string) => path === "/jobs" || path.startsWith("/jobs/");
 
@@ -17,9 +17,13 @@ function AppGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (status === "unauthenticated" && !publicPage) {
+      if (consumeExplicitSignOut()) {
+        router.replace("/login");
+        return;
+      }
       const next = typeof window !== "undefined" ? window.location.pathname + window.location.search : pathname;
       router.replace(`/login?next=${encodeURIComponent(next)}`);
-    } else if (status === "authenticated" && user && (!user.onboarded || user.roles.length === 0)) {
+    } else if (status === "authenticated" && user && !user.onboarded) {
       router.replace("/onboarding");
     }
   }, [status, user, publicPage, pathname, router]);
@@ -35,7 +39,7 @@ function AppGate({ children }: { children: React.ReactNode }) {
       </div>
     );
   if (status === "unauthenticated") return publicPage ? <PublicShell>{children}</PublicShell> : <FullPageSpinner />;
-  if (!user || !user.onboarded || user.roles.length === 0) return <FullPageSpinner />;
+  if (!user || !user.onboarded) return <FullPageSpinner />;
   return <AppShell user={user}>{children}</AppShell>;
 }
 

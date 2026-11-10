@@ -34,6 +34,14 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Set when the user signs out on purpose, so the route gate sends them to /login without a `next` page.
+let explicitSignOut = false;
+export function consumeExplicitSignOut() {
+  const v = explicitSignOut;
+  explicitSignOut = false;
+  return v;
+}
+
 /** Checks the stored token against the API without touching React state. */
 async function verifySession(): Promise<{ status: Status; user: User | null }> {
   if (!getCachedMode()) {
@@ -121,6 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    explicitSignOut = true;
     try {
       if (getToken()) await api.post("/auth/logout", undefined, { timeoutMs: 8000 });
     } catch {
@@ -143,7 +152,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refresh,
       setUser: setUserState,
       acceptSession,
-      hasRole: (role: Role) => !!user?.roles.includes(role),
+      // One marketplace: every signed-in account can both find work and hire.
+      hasRole: (role: Role) => !!user && (role === "seeker" || role === "employer"),
     }),
     [status, user, sessionMessage, login, register, logout, refresh, acceptSession],
   );
@@ -159,7 +169,7 @@ export function useAuth() {
 
 /** Where a signed-in user should land. */
 export function homeFor(user: User, next?: string | null) {
-  if (!user.onboarded || user.roles.length === 0) return "/onboarding";
+  if (!user.onboarded) return "/onboarding";
   if (next && next.startsWith("/") && !next.startsWith("//")) return next;
   return "/dashboard";
 }

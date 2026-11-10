@@ -65,7 +65,7 @@ def employer(client):
         json={"roles": ["employer"], "company_name": f"Acme {RUN}", "company_description": "We make things."},
     )
     assert r.status_code == 200, r.text
-    assert r.json()["roles"] == ["employer"] and r.json()["onboarded"] is True
+    assert r.json()["roles"] == ["employer", "seeker"] and r.json()["onboarded"] is True
     return {"token": token, "user": r.json()}
 
 
@@ -110,13 +110,13 @@ def test_health(client):
     assert r.status_code == 200 and r.json()["database"] == "connected"
 
 
-def test_register_returns_token_and_user_without_roles(client, mongo):
+def test_register_returns_token_and_user_with_both_capabilities(client, mongo):
     r = register(client, "fresh")
     assert r.status_code == 201, r.text
     data = r.json()
     assert data["token_type"] == "bearer" and data["access_token"]
     assert data["user"]["username"] == f"fresh_{RUN}"
-    assert data["user"]["roles"] == [] and data["user"]["onboarded"] is False
+    assert data["user"]["roles"] == ["employer", "seeker"] and data["user"]["onboarded"] is False
     stored = mongo.users.find_one({"username": f"fresh_{RUN}"})
     assert stored["password_hash"].startswith("$2") and PASSWORD not in str(stored)
     assert stored["phone"] == "+919876543210"
@@ -162,7 +162,7 @@ def test_login_with_username_and_email(client, employer):
     for ident in (f"employer_{RUN}", f"EMPLOYER_{RUN}@example.com"):
         r = client.post("/auth/login", json={"identifier": ident, "password": PASSWORD})
         assert r.status_code == 200, r.text
-        assert r.json()["user"]["roles"] == ["employer"]
+        assert r.json()["user"]["roles"] == ["employer", "seeker"]
 
 
 def test_login_wrong_password_and_unknown_user(client, employer):
@@ -231,36 +231,39 @@ def test_password_reset_flow(client, mongo):
 
 # ── Onboarding & roles ──────────────────────────────────────────────────────────
 
-def test_onboarding_required_and_employer_needs_company(client):
-    token = register(client, "onb").json()["access_token"]
-    r = client.post("/jobs", headers=auth(token), json=JOB)
-    assert r.status_code == 403 and "onboarding" in r.json()["detail"].lower()
-    r = client.post("/users/me/onboarding", headers=auth(token), json={"roles": ["employer"]})
-    assert r.status_code == 422
-    r = client.post("/users/me/onboarding", headers=auth(token), json={"roles": ["seeker", "employer"], "company_name": "Both Co"})
-    assert r.status_code == 200 and r.json()["roles"] == ["employer", "seeker"]
+def test_one_account_can_hire_and_apply(client, employer):
+    """Sidekick is one marketplace: a brand-new account can post jobs and apply without switching accounts."""
+    token = register(client, "unified").json()["access_token"]
+    h = auth(token)
+    r = client.post("/users/me/onboarding", headers=h, json={"skills": ["Python"]})
+    assert r.status_code == 200 and r.json()["roles"] == ["employer", "seeker"] and r.json()["onboarded"] is True
+    mine = client.post("/jobs", headers=h, json={**JOB, "title": "Unified account listing"})
+    assert mine.status_code == 201, mine.text
+    assert mine.json()["company_name"]  # falls back to the poster's name when no company is set
+    assert client.get("/jobs/mine", headers=h).status_code == 200
+    assert client.get("/applications/received", headers=h).status_code == 200
+    other = client.post("/jobs", headers=auth(employer["token"]), json={**JOB, "title": "Unified apply target"}).json()
+    applied = client.post(f"/jobs/{other['id']}/apply", headers=h, json={"cover_letter": "I can do both on one account."})
+    assert applied.status_code == 201, applied.text
+    assert client.put(f"/saved-jobs/{other['id']}", headers=h).status_code == 204
+    assert [a["job_id"] for a in client.get("/applications/mine", headers=h).json()] == [other["id"]]
+    # Close both listings so they don't leak into the search tests that filter by this run's company.
+    assert client.put(f"/jobs/{other['id']}", headers=auth(employer["token"]), json={"status": "closed"}).status_code == 200
+    assert client.put(f"/jobs/{mine.json()['id']}", headers=h, json={"status": "closed"}).status_code == 200
+    assert client.post(f"/jobs/{mine.json()['id']}/apply", headers=h, json={"cover_letter": "Applying to my own listing."}).status_code == 400
 
 
-def test_seeker_cannot_post_or_manage_jobs(client, seeker, job):
-    assert client.post("/jobs", headers=auth(seeker["token"]), json=JOB).status_code == 403
-    assert client.get("/jobs/mine", headers=auth(seeker["token"])).status_code == 403
-    assert client.get("/applications/received", headers=auth(seeker["token"])).status_code == 403
-    assert client.put(f"/jobs/{job['id']}", headers=auth(seeker["token"]), json={"title": "Hacked"}).status_code == 403
-    assert client.delete(f"/jobs/{job['id']}", headers=auth(seeker["token"])).status_code == 403
+def test_cannot_manage_other_peoples_jobs(client, seeker, job):
+    for token in (seeker["token"], register(client, "rival").json()["access_token"]):
+        assert client.put(f"/jobs/{job['id']}", headers=auth(token), json={"title": "Hijack"}).status_code == 403
+        assert client.delete(f"/jobs/{job['id']}", headers=auth(token)).status_code == 403
+        assert client.get(f"/applications/received?job_id={job['id']}", headers=auth(token)).status_code == 403
 
 
-def test_employer_cannot_manage_other_employers_jobs(client, job):
-    token = register(client, "rival").json()["access_token"]
-    client.post("/users/me/onboarding", headers=auth(token), json={"roles": ["employer"], "company_name": "Rival"})
-    assert client.put(f"/jobs/{job['id']}", headers=auth(token), json={"title": "Hijack"}).status_code == 403
-    assert client.delete(f"/jobs/{job['id']}", headers=auth(token)).status_code == 403
-    assert client.get(f"/applications/received?job_id={job['id']}", headers=auth(token)).status_code == 403
-
-
-def test_roles_cannot_be_escalated_via_register_payload(client):
-    r = register(client, "sneaky", roles=["employer"], role="EMPLOYER", onboarded=True)
+def test_roles_cannot_be_injected_via_register_payload(client):
+    r = register(client, "sneaky", roles=["admin"], role="ADMIN", onboarded=True)
     assert r.status_code == 201
-    assert r.json()["user"]["roles"] == [] and r.json()["user"]["onboarded"] is False
+    assert r.json()["user"]["roles"] == ["employer", "seeker"] and r.json()["user"]["onboarded"] is False
 
 
 # ── Jobs ────────────────────────────────────────────────────────────────────────
@@ -295,6 +298,16 @@ def test_search_and_filters(client, employer, job):
     assert ids(client.get("/jobs", params={"min_rate": 300, "q": RUN})) == {remote["id"]}
     r = client.get("/jobs", params={"q": RUN, "sort": "pay_high"})
     assert r.json()["items"][0]["id"] == remote["id"]
+    # Map-area filter only returns jobs whose real coordinates fall inside the box
+    pinned = client.post(
+        "/jobs", headers=auth(employer["token"]),
+        json={**JOB, "title": f"Pinned Hyderabad {RUN}", "lat": 17.385, "lng": 78.4867},
+    ).json()
+    hyd = "78.3,17.2,78.7,17.6"
+    assert ids(client.get("/jobs", params={"bbox": hyd, "q": RUN})) == {pinned["id"]}
+    assert ids(client.get("/jobs", params={"bbox": "72.7,18.8,73.1,19.3", "q": RUN})) == set()
+    assert client.get("/jobs", params={"bbox": "nope"}).status_code == 422
+    client.put(f"/jobs/{pinned['id']}", headers=auth(employer["token"]), json={"status": "closed"})
     # Regex metacharacters are treated literally (no injection / 500s)
     assert client.get("/jobs", params={"q": ".*("}).status_code == 200
 
@@ -341,7 +354,7 @@ def test_full_application_lifecycle(client, seeker, employer, job, mongo):
     assert client.post(f"/jobs/{job['id']}/apply", headers=hs,
                        json={"cover_letter": "Applying twice should not be allowed at all."}).status_code == 409
     assert client.post(f"/jobs/{job['id']}/apply", headers=he,
-                       json={"cover_letter": "Employer applying to own job, should fail."}).status_code == 403
+                       json={"cover_letter": "Employer applying to own job, should fail."}).status_code == 400
 
     # Employer sees the applicant with contact info and an accurate count
     received = client.get("/applications/received", params={"job_id": job["id"]}, headers=he).json()
@@ -426,8 +439,7 @@ def test_settings_update_and_roles(client):
     client.post("/users/me/onboarding", headers=h, json={"roles": ["seeker"]})
     r = client.patch("/users/me", headers=h, json={"full_name": "New  Name", "phone": "9876500000"})
     assert r.status_code == 200 and r.json()["full_name"] == "New Name"
-    assert client.put("/users/me/roles", headers=h, json={"roles": ["seeker", "employer"]}).status_code == 400
-    client.put("/profiles/me", headers=h, json={"company_name": "Side Co"})
-    r = client.put("/users/me/roles", headers=h, json={"roles": ["seeker", "employer"]})
+    assert r.json()["roles"] == ["employer", "seeker"]
+    r = client.put("/users/me/roles", headers=h, json={"roles": ["seeker"]})
     assert r.status_code == 200 and r.json()["roles"] == ["employer", "seeker"]
     assert client.put("/users/me/roles", headers=h, json={"roles": ["admin"]}).status_code == 422

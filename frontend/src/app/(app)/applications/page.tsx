@@ -45,7 +45,7 @@ export default function ApplicationsPage() {
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="My applications" description="Track every job you've applied to." />
+      <PageHeader title="My Applications" description="Track every job you've applied to." />
       <Tabs
         className="mb-4"
         value={filter}

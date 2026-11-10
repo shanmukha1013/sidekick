@@ -25,8 +25,6 @@ async def get_my_profile(user: dict = Depends(get_current_user), db: AsyncIOMoto
 @router.put("/me", response_model=ProfileOut)
 async def update_my_profile(body: ProfileUpdate, user: dict = Depends(get_current_user), db: AsyncIOMotorDatabase = Depends(get_db)):
     data = body.model_dump(exclude_unset=True)
-    if "employer" in user["roles"] and "company_name" in data and not (data["company_name"] or "").strip():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Company name is required while hiring is enabled.")
     now = utcnow()
     data["updated_at"] = now
     await db.profiles.update_one(

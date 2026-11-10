@@ -1,46 +1,51 @@
 @import "tailwindcss";
 
-/* ── Sidekick design tokens ─────────────────────────────────────────────── */
+/* ── Sidekick design tokens ─────────────────────────────────────────────────
+   Three brand colours only:
+     Black #0B0B0D — canvas, surfaces, structure            (~60%)
+     Red   #E53935 — primary actions, active states, alerts (~20%)
+     Green #22C55E — success, pay, live/open indicators     (~20%)
+   Every neutral below is white or black at an opacity over the black canvas, and every tint is the
+   red or green brand colour at an opacity — no other hues are used anywhere in the UI. */
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Sidekick silver palette — the five brand colours, plus two derived tints for raised surfaces
-     and two deeper shades for text contrast. Everything else in the UI references these tokens. */
-  --color-silver-50: #f8f9fa;
-  --color-silver-100: #f1f3f5;
-  --color-silver-200: #e9ecef;
-  --color-silver-300: #dee2e6; /* Main background silver */
-  --color-silver-400: #ced4da; /* Light silver */
-  --color-silver-500: #adb5bd; /* Medium silver */
-  --color-silver-600: #6c757d; /* Secondary silver */
-  --color-silver-700: #495057; /* Deep silver */
-  --color-silver-800: #343a40;
-  --color-silver-900: #212529;
+  /* Surfaces — black, lifted by white at low opacity */
+  --color-canvas: #0b0b0d;
+  --color-surface: #121215; /* white 3% */
+  --color-subtle: #18181b; /* white 5% */
+  --color-raised: #1f1f22; /* white 8% */
+  --color-line: #26262a; /* white 11% */
+  --color-line-strong: #3a3a3d; /* white 18% */
 
-  /* Surfaces — 60% light silver canvas, 30% silver surfaces */
-  --color-canvas: #dee2e6;
-  --color-surface: #f1f3f5;
-  --color-subtle: #e9ecef;
-  --color-line: #ced4da;
-  --color-line-strong: #adb5bd;
+  /* Text — white at opacity over black (all ≥ 4.5:1 on the canvas) */
+  --color-ink: #f5f5f5; /* white 96% */
+  --color-ink-2: #d5d5d6; /* white 83% */
+  --color-muted: #a2a2a3; /* white 62% */
+  --color-faint: #828284; /* white 48% */
 
-  /* Text — 10% deep silver contrast */
-  --color-ink: #212529;
-  --color-ink-2: #343a40;
-  --color-muted: #495057;
-  --color-faint: #6c757d;
+  /* Red — primary brand */
+  --color-brand: #e53935;
+  --color-brand-hover: #ee4b47;
+  --color-brand-soft: #291112; /* red 14% over black */
+  --color-brand-ink: #ea615d; /* red tint for text on dark / red-soft surfaces */
 
-  /* Brand — deep silver */
-  --color-brand: #495057;
-  --color-brand-hover: #343a40;
-  --color-brand-soft: #dee2e6;
-  --color-brand-ink: #343a40;
+  /* Green — success & indicators */
+  --color-accent: #22c55e;
+  --color-accent-hover: #34d06e;
+  --color-accent-soft: #0e2518; /* green 14% over black */
+  --color-accent-ink: #22c55e;
 
-  --shadow-xs: 0 1px 2px 0 rgb(33 37 41 / 0.06);
-  --shadow-card: 0 1px 2px 0 rgb(33 37 41 / 0.06), 0 2px 6px -1px rgb(33 37 41 / 0.05);
-  --shadow-pop: 0 18px 44px -14px rgb(33 37 41 / 0.28), 0 4px 12px -4px rgb(33 37 41 / 0.1);
-  --shadow-lift: 0 1px 0 0 rgb(255 255 255 / 0.7) inset, 0 10px 30px -12px rgb(33 37 41 / 0.25);
+  --color-on-brand: #ffffff;
+  --color-on-accent: #0b0b0d;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 1px 2px 0 rgb(0 0 0 / 0.6), 0 8px 24px -12px rgb(0 0 0 / 0.7);
+  --shadow-pop: 0 24px 60px -16px rgb(0 0 0 / 0.85), 0 4px 14px -4px rgb(0 0 0 / 0.6);
+  --shadow-lift: 0 1px 0 0 rgb(255 255 255 / 0.05) inset, 0 16px 40px -14px rgb(0 0 0 / 0.9);
+  --shadow-glow-red: 0 8px 28px -10px rgb(229 57 53 / 0.55);
+  --shadow-glow-green: 0 8px 28px -12px rgb(34 197 94 / 0.45);
 
   --animate-fade-in: fade-in 160ms ease-out;
   --animate-slide-up: slide-up 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -48,6 +53,7 @@
   --animate-rise: rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-float: float 7s ease-in-out infinite;
   --animate-shimmer: shimmer 2.4s linear infinite;
+  --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
 
   @keyframes fade-in {
     from { opacity: 0; }
@@ -73,12 +79,18 @@
     from { transform: translateX(-100%); }
     to { transform: translateX(0); }
   }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgb(34 197 94 / 0.55); }
+    80%, 100% { box-shadow: 0 0 0 7px rgb(34 197 94 / 0); }
+  }
 }
 
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
+    color-scheme: dark;
+    background: var(--color-canvas);
   }
   body {
     @apply bg-canvas text-ink font-sans antialiased;
@@ -90,7 +102,8 @@
     border-color: var(--color-line);
   }
   ::selection {
-    background: color-mix(in srgb, var(--color-brand) 18%, transparent);
+    background: rgb(229 57 53 / 0.35);
+    color: #fff;
   }
   :focus-visible {
     outline: 2px solid var(--color-brand);
@@ -101,9 +114,28 @@
   select:focus-visible {
     outline: none;
   }
+  select option {
+    background: var(--color-surface);
+    color: var(--color-ink);
+  }
   dialog::backdrop {
-    background: rgb(33 37 41 / 0.45);
-    backdrop-filter: blur(2px);
+    background: rgb(0 0 0 / 0.7);
+    backdrop-filter: blur(3px);
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line);
+    border: 3px solid var(--color-canvas);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-line-strong);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
 
@@ -118,21 +150,23 @@
 }
 
 @utility bg-grid {
-  background-image: linear-gradient(to right, rgb(73 80 87 / 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(73 80 87 / 0.08) 1px, transparent 1px);
+  background-image: linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
-/* Brushed-silver surface used for hero and brand panels. */
-@utility bg-silver-sheen {
-  background-image: radial-gradient(120% 80% at 50% -10%, #f8f9fa 0%, rgb(248 249 250 / 0) 60%),
-    linear-gradient(180deg, #e9ecef 0%, #dee2e6 55%, #dee2e6 100%);
+/* Hero canvas: black with a red glow and a softer green glow. */
+@utility bg-hero-glow {
+  background-image: radial-gradient(55% 60% at 18% -5%, rgb(229 57 53 / 0.22) 0%, transparent 70%),
+    radial-gradient(45% 50% at 95% 10%, rgb(34 197 94 / 0.12) 0%, transparent 70%),
+    linear-gradient(180deg, #0f0f12 0%, #0b0b0d 70%);
 }
 
-/* Deep-silver panel (auth side panel, CTA band). */
-@utility bg-silver-deep {
-  background-image: radial-gradient(90% 70% at 85% 0%, rgb(173 181 189 / 0.28) 0%, transparent 60%),
-    linear-gradient(160deg, #495057 0%, #3d434a 55%, #343a40 100%);
+/* Brand panel (auth side panel, CTA band): deep black with a red bloom. */
+@utility bg-brand-panel {
+  background-image: radial-gradient(80% 70% at 100% 0%, rgb(229 57 53 / 0.35) 0%, transparent 60%),
+    radial-gradient(60% 60% at 0% 100%, rgb(34 197 94 / 0.14) 0%, transparent 65%),
+    linear-gradient(160deg, #141417 0%, #0b0b0d 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -145,24 +179,80 @@
   }
 }
 
-/* ── Leaflet ─────────────────────────────────────────────────────────────── */
+/* ── Leaflet (real OpenStreetMap tiles; only the chrome is themed) ───────────── */
 .leaflet-container {
   z-index: 0 !important;
   font-family: inherit;
   background: var(--color-subtle);
+  outline: none;
 }
-.leaflet-popup-content-wrapper {
-  border-radius: 10px;
-  border: 1px solid var(--color-line);
+.leaflet-bar {
+  border: 1px solid var(--color-line-strong) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: var(--shadow-pop) !important;
+}
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background: var(--color-surface) !important;
+  color: var(--color-ink) !important;
+  border-bottom-color: var(--color-line) !important;
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 30px !important;
+}
+.leaflet-bar a:hover {
+  background: var(--color-raised) !important;
+}
+.leaflet-bar a.leaflet-disabled {
+  color: var(--color-faint) !important;
+}
+/* Scoped under .leaflet-container so these win over leaflet.css, which loads after this file. */
+.leaflet-container .leaflet-popup-content-wrapper,
+.leaflet-container .leaflet-popup-tip {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line-strong);
   box-shadow: var(--shadow-pop);
 }
-.leaflet-popup-content {
+.leaflet-container .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+}
+.leaflet-container .leaflet-popup-content {
   margin: 12px 14px;
+  line-height: 1.4;
+}
+.leaflet-container .leaflet-popup-content p {
+  margin: 0;
+}
+.leaflet-container a.leaflet-popup-close-button {
+  color: var(--color-muted);
+}
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: var(--color-ink);
 }
 .leaflet-control-attribution {
   font-size: 10px;
+  background: rgb(11 11 13 / 0.75) !important;
+  color: var(--color-muted) !important;
+}
+.leaflet-control-attribution a {
+  color: var(--color-ink-2) !important;
 }
 .job-map-marker {
   background: none;
   border: none;
+}
+.job-map-marker svg {
+  transition: transform 150ms ease;
+  transform-origin: 50% 100%;
+}
+.job-map-marker:hover svg {
+  transform: scale(1.12);
+}
+.job-map-marker.is-selected {
+  z-index: 1000 !important;
+}
+.job-map-marker.is-selected svg {
+  transform: scale(1.25);
 }

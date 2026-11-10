@@ -1,15 +1,17 @@
 # Sidekick
 
-Sidekick is a part-time job marketplace. Students and job seekers find flexible work; employers post jobs, review applicants and hire. One account can do both.
+Sidekick is one marketplace for part-time and flexible work. Every account can **find work and hire people** — from
+the same login and the same dashboard. There are no separate job-seeker and employer apps or accounts.
 
 **Live:** https://sidekick-sand-eight.vercel.app
 
 ## Features
 
-- **One account, unified sign-in.** Register with full name, username, email, phone and password. Sign in with email *or* username. Roles (find work / hire people / both) are chosen during onboarding and can be changed in Settings.
-- **Secure sessions.** bcrypt password hashing; JWTs carry a revocable `jti` (logout invalidates the token server-side) and a token version (changing or resetting a password signs out every other device). Roles are always read from MongoDB, never trusted from the client.
-- **Job seekers:** search and filter (keyword, category, location, employment type, remote/on-site, experience, pay sort), skill-based recommendations, save jobs, apply with a cover letter, track status, withdraw.
-- **Employers:** post, edit, close/reopen and delete listings; review applicants with contact details; move candidates through *in review → shortlisted → accepted/declined*.
+- **One account, one dashboard.** Register with full name, username, email, phone and password; sign in with email *or* username. Every account has both workspaces — *Find work* and *Hire talent* — side by side on the Overview, with one sidebar: Overview · Find Jobs · My Applications · Saved Jobs · Post a Job · My Listings · Manage Applicants · Messages · Notifications · My Profile · Settings.
+- **Secure sessions.** bcrypt password hashing; JWTs carry a revocable `jti` (logout invalidates the token server-side) and a token version (changing or resetting a password signs out every other device). Authorization is per record: only a job's poster can edit/delete it or see its applicants, and only the two people on an application can read its messages.
+- **Find work:** search and filter (keyword, category, location, employment type, remote/on-site, experience, pay sort), skill-based recommendations, save jobs, apply with a cover letter, track status, withdraw.
+- **Hire talent:** post, edit, close/reopen and delete listings; review applicants with contact details; move candidates through *in review → shortlisted → accepted/declined*. Listings post under your company name, or your own name if you haven't set one.
+- **Interactive map** (Leaflet + OpenStreetMap tiles): drag, scroll/pinch zoom, clickable markers with job details, list ↔ map sync, *Search this area* and *Near me* filtering (`bbox` on `GET /jobs`), loading/error states, and a mobile List/Map toggle. Coordinates come only from the poster — geocoded from the address via OSM Nominatim, their device location, or a pin dropped on the map. Jobs without coordinates are listed but not pinned.
 - **Messaging** between applicant and employer on every application, with unread counts.
 - **Notifications** for new applications, status changes, withdrawals and removed listings.
 - **Password reset** by email (SMTP), profile and company pages, settings.
@@ -34,7 +36,7 @@ backend/app
 backend/tests  API tests (run against a real MongoDB)
 frontend/src
   app/(auth)   login, register, forgot/reset password
-  app/(app)    authenticated app (dashboard, jobs, applications, employer, messages, …)
+  app/(app)    authenticated app (dashboard, jobs, applications, saved, post-job, listings, applicants, messages, …)
   components/  design system (ui/), app shell, job components, brand
   lib/         API client, auth context, hooks, types
 ```
@@ -79,7 +81,7 @@ product can still be demonstrated. It is isolated from production:
   (`sidekick.demo.session`). Passwords are stored only as salted PBKDF2-SHA256 hashes.
 - Nothing is sent to the API or MongoDB, and the live session token is never touched.
 - The sample jobs, companies and applicants exist **only** inside demo mode.
-- Demo-only account: `demo@sidekick.demo` / `Demo1234` (employer + job seeker).
+- Demo-only account: `demo@sidekick.demo` / `Demo1234` (finds work and hires, like every account).
 - Click the badge to reset demo data, or to switch back once the live server is healthy.
 
 Mode selection is controlled by `NEXT_PUBLIC_DATA_MODE`: `auto` (default — probes `GET /api/v1/health` once per

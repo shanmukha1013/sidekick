@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, ExternalLink, Mail, MapPin, MessageSquare, Phone, Users } from "lucide-react";
-import { RequireRole } from "@/components/app/RequireRole";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Avatar, Badge, Card, PageHeader, StatusBadge } from "@/components/ui/display";
 import { EmptyState, ErrorState, SkeletonRows } from "@/components/ui/feedback";
@@ -27,9 +26,7 @@ const ACTIONS: { status: Exclude<ApplicationStatus, "pending" | "withdrawn">; la
 
 export default function ApplicantsPage() {
   return (
-    <RequireRole role="employer">
-      <Applicants />
-    </RequireRole>
+    <Applicants />
   );
 }
 
@@ -40,7 +37,10 @@ function Applicants() {
   const jobId = params.get("job") || "";
   const jobs = useApi<Job[]>("/jobs/mine");
   const apps = useApi<Application[]>(`/applications/received${qs({ job_id: jobId })}`);
-  const [filter, setFilter] = useState<Filter>("all");
+  const initial = params.get("status");
+  const [filter, setFilter] = useState<Filter>(
+    initial && ["pending", "reviewing", "shortlisted", "accepted", "rejected"].includes(initial) ? (initial as Filter) : "all",
+  );
   const list = apps.data || [];
   const visible = list.filter((a) => (filter === "all" ? a.status !== "withdrawn" : a.status === filter));
   const count = (s: ApplicationStatus) => list.filter((a) => a.status === s).length;
@@ -48,8 +48,8 @@ function Applicants() {
   return (
     <div>
       <PageHeader
-        title="Applicants"
-        description="Review candidates, update their status and start a conversation."
+        title="Manage Applicants"
+        description="Review candidates for your listings, update their status and message them."
         actions={
           <Select
             aria-label="Filter by job"
@@ -89,7 +89,7 @@ function Applicants() {
           icon={<Users />}
           title={list.length ? "No applicants in this stage" : "No applicants yet"}
           description={list.length ? "Try another filter." : "Applications to your listings will appear here."}
-          action={!list.length && !(jobs.data || []).length && <ButtonLink href="/employer/jobs/new">Post a job</ButtonLink>}
+          action={!list.length && !(jobs.data || []).length && <ButtonLink href="/post-job">Post a job</ButtonLink>}
         />
       ) : (
         <div className="flex flex-col gap-3">

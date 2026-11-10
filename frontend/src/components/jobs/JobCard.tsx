@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Bookmark, BookmarkCheck, Globe, MapPin } from "lucide-react";
+import { Bookmark, BookmarkCheck, Globe, LocateFixed, MapPin } from "lucide-react";
 import { Avatar, Badge } from "@/components/ui/display";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/overlay";
@@ -91,18 +91,28 @@ export function JobCard({
   onSavedChange,
   footer,
   highlight,
+  onHover,
+  onLocate,
 }: {
   job: Job;
   showSave?: boolean;
   onSavedChange?: (saved: boolean) => void;
   footer?: React.ReactNode;
+  /** Selected on the map. */
   highlight?: boolean;
+  /** List ↔ map sync: hovering a card highlights its marker. */
+  onHover?: (hovering: boolean) => void;
+  /** Shows a "Show on map" button (only for jobs with coordinates). */
+  onLocate?: () => void;
 }) {
   return (
     <article
+      id={`job-${job.id}`}
+      onMouseEnter={onHover && (() => onHover(true))}
+      onMouseLeave={onHover && (() => onHover(false))}
       className={cn(
-        "group relative rounded-xl border bg-surface p-4 shadow-card transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-lift sm:p-5",
-        highlight ? "border-silver-600" : "border-line",
+        "group relative scroll-mt-24 rounded-xl border bg-surface p-4 shadow-card transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-lift sm:p-5",
+        highlight ? "border-accent/70 ring-1 ring-accent/40" : "border-line",
       )}
     >
       <div className="flex items-start gap-3.5">
@@ -114,11 +124,24 @@ export function JobCard({
                 {job.title}
               </Link>
             </h3>
-            {showSave && job.is_owner !== true && (
-              <div className="relative z-10 -mr-1.5 -mt-1">
-                <SaveButton job={job} onChange={onSavedChange} />
-              </div>
-            )}
+            <div className="relative z-10 -mr-1.5 -mt-1 flex items-center">
+              {onLocate && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onLocate();
+                  }}
+                  aria-label={`Show ${job.title} on the map`}
+                  title="Show on map"
+                  className={cn(highlight && "text-accent hover:text-accent")}
+                >
+                  <LocateFixed />
+                </Button>
+              )}
+              {showSave && job.is_owner !== true && <SaveButton job={job} onChange={onSavedChange} />}
+            </div>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
             {job.company_name && <span className="font-medium text-ink-2">{job.company_name}</span>}
@@ -126,12 +149,13 @@ export function JobCard({
             <JobLocation job={job} />
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <Badge tone="outline" className="font-semibold text-ink">
+            <Badge tone="success" className="font-semibold">
               {formatRate(job.hourly_rate)}
             </Badge>
             {job.job_type && <Badge>{job.job_type}</Badge>}
             {job.category && <Badge>{job.category}</Badge>}
-            {job.has_applied && <Badge tone="success">Applied</Badge>}
+            {job.has_applied && <Badge tone="solid">Applied</Badge>}
+            {job.is_owner && <Badge tone="brand">Your listing</Badge>}
             {job.status === "closed" && <Badge tone="warning">Closed</Badge>}
             <span className="ml-auto text-[12.5px] text-faint">{timeAgo(job.created_at)}</span>
           </div>

@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Briefcase, Check, LogOut, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader, PageHeader } from "@/components/ui/display";
-import { Alert } from "@/components/ui/feedback";
 import { Field, Input, PasswordInput } from "@/components/ui/form";
 import { useToast } from "@/components/ui/overlay";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { AuthResponse, Role, User } from "@/lib/types";
+import type { AuthResponse, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export default function SettingsPage() {
@@ -86,80 +85,60 @@ function AccountSection() {
 }
 
 function RolesSection() {
-  const { user, setUser } = useAuth();
-  const toast = useToast();
-  const router = useRouter();
-  const [roles, setRoles] = useState<Role[]>(user?.roles || []);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  if (!user) return null;
-  const dirty = [...roles].sort().join() !== [...user.roles].sort().join();
-
-  const toggle = (r: Role) => setRoles((cur) => (cur.includes(r) ? cur.filter((x) => x !== r) : [...cur, r]));
-  const save = async () => {
-    setError(null);
-    setSaving(true);
-    try {
-      const updated = await api.put<User>("/users/me/roles", { roles });
-      setUser(updated);
-      toast.success("Account roles updated");
-    } catch (err) {
-      setError(errorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <Card id="roles" className="scroll-mt-24">
-      <CardHeader title="How you use Sidekick" description="Enable one or both. Permissions are enforced by the server." />
-      <div className="p-5">
-        {error && (
-          <Alert className="mb-4">
-            {error}{" "}
-            {/company/i.test(error) && (
-              <button onClick={() => router.push("/profile")} className="font-medium underline">
-                Go to profile
-              </button>
-            )}
-          </Alert>
-        )}
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            { role: "seeker" as Role, icon: Search, title: "Find work", body: "Apply to jobs, save listings, track applications." },
-            { role: "employer" as Role, icon: Briefcase, title: "Hire people", body: "Post jobs, manage listings and applicants." },
-          ].map(({ role, icon: Icon, title, body }) => {
-            const active = roles.includes(role);
-            return (
-              <button
-                key={role}
-                type="button"
-                role="checkbox"
-                aria-checked={active}
-                onClick={() => toggle(role)}
+      <CardHeader
+        title="One account, both workspaces"
+        description="Every Sidekick account can find work and hire people. There's nothing to switch on and no second account to create."
+      />
+      <div className="grid gap-3 p-5 sm:grid-cols-2">
+        {[
+          {
+            tone: "red" as const,
+            icon: Search,
+            title: "Find work",
+            body: "Search jobs, apply, save listings and track your applications.",
+            links: [
+              { href: "/jobs", label: "Find Jobs" },
+              { href: "/applications", label: "My Applications" },
+            ],
+          },
+          {
+            tone: "green" as const,
+            icon: Briefcase,
+            title: "Hire talent",
+            body: "Post jobs, manage listings, review applicants and message them.",
+            links: [
+              { href: "/post-job", label: "Post a Job" },
+              { href: "/applicants", label: "Manage Applicants" },
+            ],
+          },
+        ].map(({ tone, icon: Icon, title, body, links }) => (
+          <div key={title} className="rounded-xl border border-line bg-subtle p-4">
+            <div className="flex items-center gap-2.5">
+              <span
                 className={cn(
-                  "flex items-start gap-3 rounded-xl border p-4 text-left transition-[border-color,box-shadow]",
-                  active ? "border-ink ring-1 ring-ink" : "border-line hover:border-line-strong",
+                  "flex size-8 items-center justify-center rounded-lg border [&_svg]:size-4",
+                  tone === "red" ? "border-brand/30 bg-brand-soft text-brand-ink" : "border-accent/30 bg-accent-soft text-accent-ink",
                 )}
               >
-                <Icon className="mt-0.5 size-[18px] shrink-0 text-ink-2" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[14px] font-semibold">{title}</span>
-                  <span className="mt-0.5 block text-[13px] text-muted">{body}</span>
-                </span>
-                <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-md border", active ? "border-silver-700 bg-silver-700 text-silver-50" : "border-line-strong")}>
-                  {active && <Check className="size-3.5" />}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {!roles.length && <p className="mt-3 text-[13px] text-red-600">Keep at least one option enabled.</p>}
-        <div className="mt-4 flex justify-end">
-          <Button onClick={save} loading={saving} disabled={!dirty || !roles.length}>
-            Update roles
-          </Button>
-        </div>
+                <Icon />
+              </span>
+              <span className="text-[14px] font-semibold">{title}</span>
+              <span className="ml-auto inline-flex items-center gap-1 text-[12px] font-medium text-accent-ink">
+                <Check className="size-3.5" /> Enabled
+              </span>
+            </div>
+            <p className="mt-2 text-[13px] text-muted">{body}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {links.map((l) => (
+                <ButtonLink key={l.href} href={l.href} variant="secondary" size="sm">
+                  {l.label}
+                </ButtonLink>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </Card>
   );

@@ -58,10 +58,10 @@ export function Alert({
   className?: string;
 }) {
   const styles = {
-    error: "border-red-200 bg-red-50 text-red-800",
-    success: "border-silver-500 bg-silver-200 text-silver-900",
-    info: "border-line bg-silver-200 text-silver-800",
-    warning: "border-silver-500 bg-silver-400/60 text-silver-900",
+    error: "border-brand/35 bg-brand-soft text-ink",
+    success: "border-accent/35 bg-accent-soft text-ink",
+    info: "border-line-strong bg-subtle text-ink-2",
+    warning: "border-brand/35 bg-brand-soft text-ink",
   }[tone];
   const Icon = tone === "success" ? CheckCircle2 : tone === "info" ? Info : AlertCircle;
   return (

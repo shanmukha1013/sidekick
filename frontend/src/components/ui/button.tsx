@@ -9,12 +9,13 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-silver-700 text-silver-50 shadow-[0_1px_0_0_rgb(255_255_255/0.12)_inset,0_1px_2px_0_rgb(33_37_41/0.2)] hover:bg-silver-800",
-        brand: "bg-silver-800 text-silver-50 shadow-xs hover:bg-silver-900",
-        secondary: "border border-line bg-surface text-ink shadow-xs hover:border-line-strong hover:bg-subtle/60",
-        ghost: "text-ink-2 hover:bg-subtle hover:text-ink",
-        danger: "bg-red-600 text-white shadow-xs hover:bg-red-700",
-        "danger-ghost": "text-red-600 hover:bg-red-50",
+        primary:
+          "bg-brand font-semibold text-on-brand shadow-[0_1px_0_0_rgb(255_255_255/0.18)_inset,0_6px_18px_-8px_rgb(229_57_53/0.6)] hover:bg-brand-hover",
+        brand: "bg-accent font-semibold text-on-accent shadow-[0_6px_18px_-10px_rgb(34_197_94/0.6)] hover:bg-accent-hover",
+        secondary: "border border-line-strong bg-surface text-ink shadow-xs hover:border-ink-2/40 hover:bg-raised",
+        ghost: "text-ink-2 hover:bg-raised hover:text-ink",
+        danger: "bg-brand font-semibold text-on-brand shadow-xs hover:bg-brand-hover",
+        "danger-ghost": "text-brand-ink hover:bg-brand-soft",
         link: "h-auto px-0 text-brand hover:text-brand-hover underline-offset-4 hover:underline",
       },
       size: {

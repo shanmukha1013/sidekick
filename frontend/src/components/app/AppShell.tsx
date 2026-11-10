@@ -13,6 +13,7 @@ import {
   Menu,
   MessageSquare,
   Plus,
+  PlusCircle,
   Search,
   Settings,
   UserRound,
@@ -59,41 +60,45 @@ function useCounts() {
   return counts;
 }
 
-function navSections(user: User, counts: Counts) {
-  const sections: { title?: string; items: NavItem[] }[] = [
+type Section = { title?: string; tone?: "red" | "green"; items: NavItem[] };
+
+/** One navigation for one account: finding work and hiring are two workspaces of the same app. */
+function navSections(counts: Counts): Section[] {
+  return [
+    { items: [{ href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true }] },
     {
+      title: "Find work",
+      tone: "red",
       items: [
-        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-        { href: "/jobs", label: "Find jobs", icon: Search },
+        { href: "/jobs", label: "Find Jobs", icon: Search },
+        { href: "/applications", label: "My Applications", icon: FileText },
+        { href: "/saved", label: "Saved Jobs", icon: Bookmark },
+      ],
+    },
+    {
+      title: "Hire talent",
+      tone: "green",
+      items: [
+        { href: "/post-job", label: "Post a Job", icon: PlusCircle, exact: true },
+        { href: "/listings", label: "My Listings", icon: Briefcase },
+        { href: "/applicants", label: "Manage Applicants", icon: Users },
+      ],
+    },
+    {
+      title: "Inbox",
+      items: [
         { href: "/messages", label: "Messages", icon: MessageSquare, badge: counts.messages },
         { href: "/notifications", label: "Notifications", icon: Bell, badge: counts.notifications },
       ],
     },
+    {
+      title: "Account",
+      items: [
+        { href: "/profile", label: "My Profile", icon: UserRound },
+        { href: "/settings", label: "Settings", icon: Settings },
+      ],
+    },
   ];
-  if (user.roles.includes("seeker"))
-    sections.push({
-      title: "Job seeking",
-      items: [
-        { href: "/applications", label: "My applications", icon: FileText },
-        { href: "/saved", label: "Saved jobs", icon: Bookmark },
-      ],
-    });
-  if (user.roles.includes("employer"))
-    sections.push({
-      title: "Hiring",
-      items: [
-        { href: "/employer/jobs", label: "Job listings", icon: Briefcase, exact: true },
-        { href: "/employer/applicants", label: "Applicants", icon: Users },
-      ],
-    });
-  sections.push({
-    title: "Account",
-    items: [
-      { href: "/profile", label: "Profile", icon: UserRound },
-      { href: "/settings", label: "Settings", icon: Settings },
-    ],
-  });
-  return sections;
 }
 
 function isActive(pathname: string, item: NavItem) {
@@ -101,13 +106,18 @@ function isActive(pathname: string, item: NavItem) {
   return pathname === item.href || pathname.startsWith(item.href + "/");
 }
 
-function SidebarNav({ user, counts, onNavigate }: { user: User; counts: Counts; onNavigate?: () => void }) {
+function SidebarNav({ counts, onNavigate }: { counts: Counts; onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="flex flex-col gap-6">
-      {navSections(user, counts).map((section, i) => (
+    <nav aria-label="Main" className="flex flex-col gap-5">
+      {navSections(counts).map((section, i) => (
         <div key={i}>
-          {section.title && <p className="mb-1.5 px-2.5 text-[11.5px] font-medium uppercase tracking-[0.06em] text-faint">{section.title}</p>}
+          {section.title && (
+            <p className="mb-1.5 flex items-center gap-2 px-2.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-faint">
+              {section.tone && <span aria-hidden="true" className={cn("size-1.5 rounded-full", section.tone === "red" ? "bg-brand" : "bg-accent")} />}
+              {section.title}
+            </p>
+          )}
           <ul className="flex flex-col gap-0.5">
             {section.items.map((item) => {
               const active = isActive(pathname, item);
@@ -119,14 +129,25 @@ function SidebarNav({ user, counts, onNavigate }: { user: User; counts: Counts; 
                     onClick={onNavigate}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "group flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[14px] transition-colors",
-                      active ? "bg-subtle font-medium text-ink" : "text-ink-2 hover:bg-subtle/70 hover:text-ink",
+                      "group relative flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[14px] transition-colors",
+                      active ? "bg-raised font-medium text-ink" : "text-ink-2 hover:bg-subtle hover:text-ink",
                     )}
                   >
-                    <Icon className={cn("size-[17px] shrink-0", active ? "text-ink" : "text-muted group-hover:text-ink-2")} />
+                    {active && (
+                      <span
+                        aria-hidden="true"
+                        className={cn("absolute inset-y-2 -left-3 w-[3px] rounded-r-full", section.tone === "green" ? "bg-accent" : "bg-brand")}
+                      />
+                    )}
+                    <Icon
+                      className={cn(
+                        "size-[17px] shrink-0 transition-colors",
+                        active ? (section.tone === "green" ? "text-accent" : "text-brand") : "text-muted group-hover:text-ink-2",
+                      )}
+                    />
                     <span className="flex-1 truncate">{item.label}</span>
                     {!!item.badge && item.badge > 0 && (
-                      <span className="min-w-5 rounded-full bg-brand px-1.5 text-center text-[11px] font-semibold leading-5 text-white tabular-nums">
+                      <span className="min-w-5 rounded-full bg-brand px-1.5 text-center text-[11px] font-semibold leading-5 text-on-brand tabular-nums">
                         {item.badge > 99 ? "99+" : item.badge}
                       </span>
                     )}
@@ -146,7 +167,7 @@ function UserFooter({ user }: { user: User }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-line bg-surface p-2.5 shadow-xs">
+    <div className="flex items-center gap-2.5 rounded-xl border border-line bg-subtle p-2.5">
       <Avatar name={user.full_name} size={32} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13.5px] font-medium text-ink">{user.full_name}</p>
@@ -196,12 +217,12 @@ export function AppShell({ user, children }: { user: User; children: React.React
   return (
     <div className="min-h-dvh lg:pl-[248px]">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-line bg-subtle lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-line bg-surface lg:flex">
         <div className="flex h-16 items-center px-5">
           <Logo href="/dashboard" />
         </div>
         <div className="flex-1 overflow-y-auto px-3 py-2">
-          <SidebarNav user={user} counts={counts} />
+          <SidebarNav counts={counts} />
         </div>
         <div className="p-3">
           <UserFooter user={user} />
@@ -211,8 +232,8 @@ export function AppShell({ user, children }: { user: User; children: React.React
       {/* Mobile drawer */}
       {drawer && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <div className="absolute inset-0 animate-fade-in bg-silver-900/40" onClick={() => setDrawer(false)} />
-          <div className="absolute inset-y-0 left-0 flex w-[min(300px,85vw)] animate-slide-in-left flex-col bg-canvas shadow-pop">
+          <div className="absolute inset-0 animate-fade-in bg-black/70 backdrop-blur-[2px]" onClick={() => setDrawer(false)} />
+          <div className="absolute inset-y-0 left-0 flex w-[min(300px,85vw)] animate-slide-in-left flex-col border-r border-line bg-surface shadow-pop">
             <div className="flex h-14 items-center justify-between px-4">
               <Logo href="/dashboard" />
               <Button variant="ghost" size="icon-sm" onClick={() => setDrawer(false)} aria-label="Close menu">
@@ -220,7 +241,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
               </Button>
             </div>
             <div className="flex-1 overflow-y-auto px-3 py-2">
-              <SidebarNav user={user} counts={counts} onNavigate={() => setDrawer(false)} />
+              <SidebarNav counts={counts} onNavigate={() => setDrawer(false)} />
             </div>
             <div className="p-3">
               <UserFooter user={user} />
@@ -248,7 +269,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
                 id="global-search"
                 ref={searchRef}
                 placeholder="Search jobs, skills, companies"
-                className="h-9 w-full rounded-lg border border-line bg-surface pl-9 pr-3 text-[13.5px] shadow-xs placeholder:text-faint focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/12"
+                className="h-9 w-full rounded-lg border border-line bg-surface pl-9 pr-3 text-[13.5px] text-ink placeholder:text-faint focus:border-accent/70 focus:outline-none focus:ring-4 focus:ring-accent/15"
               />
             </div>
           </form>
@@ -262,11 +283,12 @@ export function AppShell({ user, children }: { user: User; children: React.React
               <Bell className="size-[18px]" />
               {counts.notifications > 0 && <span className="absolute right-2 top-2 size-2 rounded-full bg-brand ring-2 ring-canvas" />}
             </Link>
-            {user.roles.includes("employer") && (
-              <ButtonLink href="/employer/jobs/new" size="sm" className="ml-1">
-                <Plus /> <span className="hidden sm:inline">Post a job</span>
-              </ButtonLink>
-            )}
+            <ButtonLink href="/jobs" size="sm" variant="secondary" className="ml-1 hidden sm:inline-flex">
+              <Search /> Find work
+            </ButtonLink>
+            <ButtonLink href="/post-job" size="sm">
+              <Plus /> <span className="hidden sm:inline">Post a job</span>
+            </ButtonLink>
           </div>
         </div>
       </header>

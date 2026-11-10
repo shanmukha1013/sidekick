@@ -46,6 +46,23 @@ async def _applicant_counts(db: AsyncIOMotorDatabase, job_ids: List[str]) -> Dic
     return {row["_id"]: row["n"] async for row in db.applications.aggregate(pipeline)}
 
 
+def _bbox_query(bbox: str) -> Dict[str, Any]:
+    """Restrict to jobs whose stored coordinates fall inside the visible map area."""
+    try:
+        min_lng, min_lat, max_lng, max_lat = (float(v) for v in bbox.split(","))
+    except ValueError:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="bbox must be minLng,minLat,maxLng,maxLat.")
+    min_lat, max_lat = max(-90.0, min(min_lat, max_lat)), min(90.0, max(min_lat, max_lat))
+    min_lng, max_lng = max(-180.0, min_lng), min(180.0, max_lng)
+    query: Dict[str, Any] = {"lat": {"$gte": min_lat, "$lte": max_lat}}
+    if min_lng <= max_lng:
+        query["lng"] = {"$gte": min_lng, "$lte": max_lng}
+    else:  # area crosses the antimeridian
+        query["$nor"] = [{"lng": {"$gt": max_lng, "$lt": min_lng}}]
+        query["lng"] = {"$type": "number"}
+    return query
+
+
 @router.get("/meta")
 async def job_meta():
     return {"categories": JOB_CATEGORIES, "job_types": JOB_TYPES, "experience_levels": EXPERIENCE_LEVELS}
@@ -63,6 +80,7 @@ async def list_jobs(
     experience_level: Optional[str] = None,
     min_rate: Optional[float] = Query(default=None, ge=0),
     max_rate: Optional[float] = Query(default=None, ge=0),
+    bbox: Optional[str] = Query(default=None, max_length=120, description="Map area: minLng,minLat,maxLng,maxLat"),
     sort: str = Query(default="newest", pattern="^(newest|pay_high|pay_low)$"),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=50),
@@ -94,6 +112,9 @@ async def list_jobs(
             query["hourly_rate"]["$gte"] = min_rate
         if max_rate is not None:
             query["hourly_rate"]["$lte"] = max_rate
+
+    if bbox:
+        query.update(_bbox_query(bbox))
 
     sort_spec = {"newest": [("created_at", -1)], "pay_high": [("hourly_rate", -1)], "pay_low": [("hourly_rate", 1)]}[sort]
     total = await db.jobs.count_documents(query)
@@ -248,6 +269,6 @@ async def apply_to_job(job_id: str, body: ApplicationCreate, user: dict = Depend
         "application_received",
         f"New application for “{job['title']}”",
         f"{user.get('full_name') or user.get('username')} applied.",
-        f"/employer/applicants?job={job_id}",
+        f"/applicants?job={job_id}",
     )
     return application_out(app, job=job_out(job))

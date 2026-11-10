@@ -1,7 +1,8 @@
 /**
  * DEMO MODE ONLY — an in-browser implementation of the Sidekick API used when the live server or its
- * database is unavailable. It mirrors the live endpoints' shapes and permission rules (roles are read from
- * the stored account, never from the request), and keeps everything in the browser-local demo store.
+ * database is unavailable. It mirrors the live endpoints' shapes and permission rules (one account can both
+ * hire and apply; ownership of jobs, applicants and conversations is enforced per record), and keeps
+ * everything in the browser-local demo store.
  */
 import { ApiError } from "@/lib/api";
 import { EXPERIENCE_LEVELS, JOB_CATEGORIES, JOB_TYPES, type Role } from "@/lib/types";
@@ -18,6 +19,9 @@ import {
   uid,
   verifyPassword,
 } from "@/lib/demo/store";
+
+/** Sidekick is one marketplace: every account can both find work and hire. */
+const ALL_CAPABILITIES: Role[] = ["employer", "seeker"];
 
 type Body = Record<string, unknown>;
 interface Ctx {
@@ -58,7 +62,7 @@ function userOut(u: DUser) {
     username: u.username,
     email: u.email,
     phone: u.phone,
-    roles: u.roles,
+    roles: ALL_CAPABILITIES,
     onboarded: u.onboarded,
     created_at: u.created_at,
   };
@@ -80,7 +84,7 @@ function profileOut(db: DemoDB, u: DUser) {
     user_id: u.id,
     full_name: u.full_name,
     username: u.username,
-    roles: u.roles,
+    roles: ALL_CAPABILITIES,
     skills: p.skills || [],
     portfolio_links: p.portfolio_links || [],
     preferred_categories: p.preferred_categories || [],
@@ -150,13 +154,13 @@ function requireUser(ctx: Ctx): DUser {
   return ctx.user as DUser;
 }
 
-function requireRole(ctx: Ctx, role: Role): DUser {
-  const u = requireUser(ctx);
-  if (!u.onboarded) fail(403, "Finish setting up your account first.");
-  if (!u.roles.includes(role)) {
-    fail(403, role === "employer" ? "Enable hiring in Settings to use employer features." : "Enable job seeking in Settings to apply for jobs.");
-  }
-  return u;
+/**
+ * Endpoints name the capability they use, but every account can both find work and hire — so this only
+ * checks that someone is signed in. Record ownership is enforced by each handler.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function requireRole(ctx: Ctx, capability: Role): DUser {
+  return requireUser(ctx);
 }
 
 function ownedJob(ctx: Ctx, id: string): DJob {
@@ -258,7 +262,7 @@ on("POST", "/auth/register", async ({ db, body }) => {
     username,
     email,
     phone,
-    roles: [],
+    roles: [...ALL_CAPABILITIES],
     onboarded: false,
     created_at: nowIso(),
     password: await hashPassword(password),
@@ -304,9 +308,6 @@ on("POST", "/auth/change-password", async (ctx) => {
 // users
 on("POST", "/users/me/onboarding", (ctx) => {
   const u = requireUser(ctx);
-  const roles = Array.from(new Set((Array.isArray(ctx.body.roles) ? ctx.body.roles : []).filter((r): r is Role => r === "seeker" || r === "employer"))).sort();
-  if (!roles.length) fail(422, "Choose at least one way to use Sidekick.");
-  if (roles.includes("employer") && !str(ctx.body.company_name)) fail(422, "Company or organization name is required to hire on Sidekick.", { company_name: "Required to hire on Sidekick." });
   const p = profileFor(ctx.db, u.id);
   for (const k of ["headline", "location", "company_name", "company_description"] as const) {
     if (str(ctx.body[k])) p[k] = str(ctx.body[k]);
@@ -314,7 +315,7 @@ on("POST", "/users/me/onboarding", (ctx) => {
   if (str(ctx.body.company_website)) p.company_website = normalizeWebsite(ctx.body.company_website);
   if (Array.isArray(ctx.body.skills)) p.skills = (ctx.body.skills as unknown[]).map(str).filter(Boolean).slice(0, 30);
   if (Array.isArray(ctx.body.preferred_categories)) p.preferred_categories = (ctx.body.preferred_categories as unknown[]).map(str).filter(Boolean);
-  u.roles = roles;
+  u.roles = [...ALL_CAPABILITIES];
   u.onboarded = true;
   return userOut(u);
 });
@@ -336,12 +337,8 @@ on("PATCH", "/users/me", (ctx) => {
 
 on("PUT", "/users/me/roles", (ctx) => {
   const u = requireUser(ctx);
-  const roles = Array.from(new Set((Array.isArray(ctx.body.roles) ? ctx.body.roles : []).filter((r): r is Role => r === "seeker" || r === "employer"))).sort();
-  if (!roles.length) fail(422, "Keep at least one role enabled.");
-  if (roles.includes("employer") && !u.roles.includes("employer") && !str(profileFor(ctx.db, u.id).company_name)) {
-    fail(400, "Add your company or organization name to your profile before enabling hiring.");
-  }
-  u.roles = roles;
+  // Kept for older clients: every account can both find work and hire.
+  u.roles = [...ALL_CAPABILITIES];
   u.onboarded = true;
   return userOut(u);
 });
@@ -353,7 +350,6 @@ on("PUT", "/profiles/me", (ctx) => {
   const u = requireUser(ctx);
   const p = profileFor(ctx.db, u.id);
   const b = ctx.body;
-  if (u.roles.includes("employer") && "company_name" in b && !str(b.company_name)) fail(400, "Company name is required while hiring is enabled.");
   for (const k of ["headline", "bio", "location", "experience", "education", "availability", "company_name", "company_description"] as const) {
     if (k in b) p[k] = str(b[k]) || null;
   }
@@ -397,6 +393,19 @@ on("GET", "/jobs", ({ db, user, q }) => {
   if (q.get("experience_level")) rows = rows.filter((j) => j.experience_level === q.get("experience_level"));
   if (min !== null) rows = rows.filter((j) => j.hourly_rate >= min);
   if (max !== null) rows = rows.filter((j) => j.hourly_rate <= max);
+  if (q.get("bbox")) {
+    const box = (q.get("bbox") || "").split(",").map(Number);
+    if (box.length !== 4 || box.some((n) => !Number.isFinite(n))) fail(422, "bbox must be minLng,minLat,maxLng,maxLat.");
+    const [minLng, minLat, maxLng, maxLat] = box;
+    rows = rows.filter(
+      (j) =>
+        typeof j.lat === "number" &&
+        typeof j.lng === "number" &&
+        j.lat >= Math.min(minLat, maxLat) &&
+        j.lat <= Math.max(minLat, maxLat) &&
+        (minLng <= maxLng ? j.lng >= minLng && j.lng <= maxLng : j.lng >= minLng || j.lng <= maxLng),
+    );
+  }
   const sort = q.get("sort") || "newest";
   rows.sort((a, b) =>
     sort === "pay_high" ? b.hourly_rate - a.hourly_rate : sort === "pay_low" ? a.hourly_rate - b.hourly_rate : b.created_at.localeCompare(a.created_at),
@@ -527,7 +536,7 @@ on("POST", "/jobs/:id/apply", (ctx, [id]) => {
     updated_at: now,
   };
   ctx.db.applications.push(app);
-  notify(ctx.db, job!.employer_id, "application_received", `New application for “${job!.title}”`, `${u.full_name} applied.`, `/employer/applicants?job=${id}`);
+  notify(ctx.db, job!.employer_id, "application_received", `New application for “${job!.title}”`, `${u.full_name} applied.`, `/applicants?job=${id}`);
   return appOut(ctx.db, app);
 });
 
@@ -588,7 +597,7 @@ on("POST", "/applications/:id/withdraw", (ctx, [id]) => {
   a!.status = "withdrawn";
   a!.updated_at = nowIso();
   const job = ctx.db.jobs.find((j) => j.id === a!.job_id);
-  if (job) notify(ctx.db, a!.employer_id, "application_withdrawn", `An applicant withdrew from “${job.title}”`, `${u.full_name} withdrew their application.`, `/employer/applicants?job=${job.id}`);
+  if (job) notify(ctx.db, a!.employer_id, "application_withdrawn", `An applicant withdrew from “${job.title}”`, `${u.full_name} withdrew their application.`, `/applicants?job=${job.id}`);
   return appOut(ctx.db, a!);
 });
 

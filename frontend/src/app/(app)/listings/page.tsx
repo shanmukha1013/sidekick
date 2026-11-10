@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Briefcase, Eye, Pencil, Plus, Power, Trash2, Users } from "lucide-react";
-import { RequireRole } from "@/components/app/RequireRole";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Badge, Card, PageHeader } from "@/components/ui/display";
 import { EmptyState, ErrorState, SkeletonRows } from "@/components/ui/feedback";
@@ -16,9 +15,7 @@ import type { Job } from "@/lib/types";
 
 export default function EmployerJobsPage() {
   return (
-    <RequireRole role="employer">
-      <Listings />
-    </RequireRole>
+    <Listings />
   );
 }
 
@@ -64,10 +61,10 @@ function Listings() {
   return (
     <div>
       <PageHeader
-        title="Job listings"
+        title="My Listings"
         description="Create, edit and manage the jobs you've posted."
         actions={
-          <ButtonLink href="/employer/jobs/new">
+          <ButtonLink href="/post-job">
             <Plus /> Post a job
           </ButtonLink>
         }
@@ -91,7 +88,7 @@ function Listings() {
           icon={<Briefcase />}
           title={list.length ? "No listings here" : "You haven't posted any jobs"}
           description={list.length ? "Try a different filter." : "Post your first job to start receiving applications."}
-          action={!list.length && <ButtonLink href="/employer/jobs/new"><Plus /> Post a job</ButtonLink>}
+          action={!list.length && <ButtonLink href="/post-job"><Plus /> Post a job</ButtonLink>}
         />
       ) : (
         <div className="flex flex-col gap-3">
@@ -111,13 +108,13 @@ function Listings() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <ButtonLink href={`/employer/applicants?job=${job.id}`} variant="secondary" size="sm">
+                  <ButtonLink href={`/applicants?job=${job.id}`} variant="secondary" size="sm">
                     <Users /> {job.applicant_count ?? 0} applicant{job.applicant_count === 1 ? "" : "s"}
                   </ButtonLink>
                   <ButtonLink href={`/jobs/${job.id}`} variant="ghost" size="icon-sm" aria-label="View listing" title="View">
                     <Eye />
                   </ButtonLink>
-                  <ButtonLink href={`/employer/jobs/${job.id}/edit`} variant="ghost" size="icon-sm" aria-label="Edit listing" title="Edit">
+                  <ButtonLink href={`/listings/${job.id}/edit`} variant="ghost" size="icon-sm" aria-label="Edit listing" title="Edit">
                     <Pencil />
                   </ButtonLink>
                   <Button
@@ -130,7 +127,7 @@ function Listings() {
                   >
                     {busyId !== job.id && <Power />}
                   </Button>
-                  <Button variant="ghost" size="icon-sm" onClick={() => setDeleting(job)} aria-label="Delete listing" title="Delete" className="hover:text-red-600">
+                  <Button variant="ghost" size="icon-sm" onClick={() => setDeleting(job)} aria-label="Delete listing" title="Delete" className="hover:bg-brand-soft hover:text-brand-ink">
                     <Trash2 />
                   </Button>
                 </div>
